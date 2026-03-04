@@ -1,9 +1,12 @@
 <template>
   <div class="asset-alternative">
     <h4 class="mb-4" v-html="fileFormat" />
-    <HrefActions isAsset :data="asset" :shown="shown" @show="show" :auth="auth" />
-    <div class="mt-4" v-if="asset.description">
+    <HrefActions v-if="!isCodeSnippet" isAsset :data="asset" :shown="shown" @show="show" :auth="auth" />
+    <div class="mt-4" v-if="asset.description && !isCodeSnippet">
       <Description :description="asset.description" compact />
+    </div>
+    <div class="mt-4" v-else-if="isCodeSnippet && codeContent">
+      <CodeSnippet :code="codeContent" :label="asset.title || 'Code'" :language="codeLanguage" />
     </div>
     <MetadataGroups class="mt-4" :data="resolvedAsset" :context="context" :ignoreFields="ignore" title="" type="Asset" />
   </div>
@@ -19,12 +22,19 @@ import AuthUtils from './auth/utils';
 import { isObject, size } from 'stac-js/src/utils.js';
 import { Asset, STACReference } from 'stac-js';
 
+const CODE_SNIPPET_TYPES = [
+  'text/x-python',
+  'application/x-python',
+  'text/x-script.python'
+];
+
 export default {
   name: 'AssetAlternative',
   components: {
     Description,
     HrefActions,
-    MetadataGroups: defineAsyncComponent(() => import('./MetadataGroups.vue'))
+    MetadataGroups: defineAsyncComponent(() => import('./MetadataGroups.vue')),
+    CodeSnippet: defineAsyncComponent(() => import('./metadata/CodeSnippet.vue'))
   },
   mixins: [
     StacFieldsMixin({ formatMediaType })
@@ -97,6 +107,28 @@ export default {
     },
     auth() {
       return AuthUtils.resolveAuth(this.asset);
+    },
+    isCodeSnippet() {
+      return CODE_SNIPPET_TYPES.includes(this.asset.type);
+    },
+    codeContent() {
+      if (!this.isCodeSnippet || !this.asset.description) {
+        return null;
+      }
+      // Extract code from markdown code fences if present
+      const description = this.asset.description;
+      const codeBlockMatch = description.match(/```[\w]*\n?([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        return codeBlockMatch[1].trim();
+      }
+      // Return as-is if no code fences
+      return description.trim();
+    },
+    codeLanguage() {
+      if (this.asset.type && this.asset.type.includes('python')) {
+        return 'python';
+      }
+      return 'text';
     }
   },
   methods: {

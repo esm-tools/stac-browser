@@ -6,6 +6,9 @@
     <b-col v-if="showTable" md="12" class="value mt-2">
       <MetadataTable v-bind="$props" />
     </b-col>
+    <b-col v-else-if="isCodeSnippet" md="12" class="value mt-2">
+      <CodeSnippet :code="value" :label="label" :language="codeLanguage" />
+    </b-col>
     <b-col v-else md="9" class="value">
       <div v-html="formatted" />
     </b-col>
@@ -24,10 +27,15 @@ const FORCE_TABLE = [
   'bands'
 ];
 
+const CODE_SNIPPET_FIELDS = [
+  'xarray_snippet'
+];
+
 export default {
   name: "MetadataEntry",
   components: {
-    MetadataTable: defineAsyncComponent(() => import('./MetadataTable.vue'))
+    MetadataTable: defineAsyncComponent(() => import('./MetadataTable.vue')),
+    CodeSnippet: defineAsyncComponent(() => import('./CodeSnippet.vue'))
   },
   mixins: [
     EntryMixin
@@ -35,6 +43,15 @@ export default {
   computed: {
     showTable() {
       return FORCE_TABLE.includes(this.field) || this.itemOrder.length > 0 && size(this.value) >= 3;
+    },
+    isCodeSnippet() {
+      return CODE_SNIPPET_FIELDS.includes(this.field) && typeof this.value === 'string';
+    },
+    codeLanguage() {
+      if (this.field.includes('xarray') || this.field.includes('python')) {
+        return 'python';
+      }
+      return 'text';
     }
   }
 };
