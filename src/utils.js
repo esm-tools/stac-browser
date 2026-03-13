@@ -240,7 +240,7 @@ export default class Utils {
           value = value.join(',');
         }
         else if (key === 'filters') {
-          let params = value.toJSON();
+          let params = value.toText();
           url.setQuery(params);
           continue;
         }
