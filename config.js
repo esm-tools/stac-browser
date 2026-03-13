@@ -54,5 +54,6 @@ export default {
     preprocessSTAC: null,
     authConfig: null,
     crs: {},
-    footerLinks: null
+    footerLinks: null,
+    vizServer: null // URL of visualization server for data previews (e.g., 'http://localhost:8001')
 };

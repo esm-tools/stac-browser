@@ -30,6 +30,27 @@
         <CollectionLink v-if="collectionLink" :link="collectionLink" />
         <Providers v-if="data.properties.providers" :providers="data.properties.providers" />
         <MetadataGroups :data="data" type="Item" :ignoreFields="ignoredMetadataFields" />
+
+        <!-- Data Preview Section -->
+        <section v-if="vizServer" class="data-preview-section mb-4">
+          <h2>
+            <b-button
+              variant="link"
+              class="p-0 text-decoration-none"
+              @click="previewExpanded = !previewExpanded"
+            >
+              {{ previewExpanded ? '[-]' : '[+]' }} {{ $t('dataPreview') || 'Data Preview' }}
+            </b-button>
+          </h2>
+          <b-collapse v-model="previewExpanded">
+            <DataPreview
+              v-if="previewExpanded"
+              :item="data"
+              :viz-server="vizServer"
+              :stac-api="stacApi"
+            />
+          </b-collapse>
+        </section>
       </b-col>
     </b-row>
   </div>
@@ -38,7 +59,7 @@
 <script>
 import { defineComponent, defineAsyncComponent } from 'vue';
 import { mapState, mapGetters } from 'vuex';
-import { BTab, BTabs, BCard } from 'bootstrap-vue-next';
+import { BTab, BTabs, BCard, BCollapse, BButton } from 'bootstrap-vue-next';
 import Description from '../components/Description.vue';
 import ReadMore from "../components/ReadMore.vue";
 import ShowAssetLinkMixin from '../components/ShowAssetLinkMixin';
@@ -51,9 +72,12 @@ export default defineComponent({
     BTab,
     BTabs,
     BCard,
+    BCollapse,
+    BButton,
     AnonymizedNotice: defineAsyncComponent(() => import('../components/AnonymizedNotice.vue')),
     Assets: defineAsyncComponent(() => import('../components/Assets.vue')),
     CollectionLink: defineAsyncComponent(() => import('../components/CollectionLink.vue')),
+    DataPreview: defineAsyncComponent(() => import('../components/DataPreview.vue')),
     Description,
     DeprecationNotice: defineAsyncComponent(() => import('../components/DeprecationNotice.vue')),
     Keywords: defineAsyncComponent(() => import('../components/Keywords.vue')),
@@ -70,6 +94,7 @@ export default defineComponent({
   ],
   data() {
     return {
+      previewExpanded: false,
       ignoredMetadataFields: [
         'description',
         'keywords',
@@ -88,8 +113,12 @@ export default defineComponent({
     };
   },
   computed: {
-    ...mapState(['data', 'url']),
-    ...mapGetters(['collectionLink', 'parentLink'])
+    ...mapState(['data', 'url', 'catalogUrl', 'vizServer']),
+    ...mapGetters(['collectionLink', 'parentLink']),
+    stacApi() {
+      // Use catalogUrl as the STAC API endpoint
+      return this.catalogUrl || '';
+    }
   },
   watch: {
     data: {
