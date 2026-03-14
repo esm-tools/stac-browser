@@ -48,6 +48,93 @@
           <MapSelect class="mb-4" v-if="provideBBox" v-model="query.bbox" :stac="stac" />
         </b-form-group>
 
+        <!-- Climate Scientist Quick Filters -->
+        <b-form-group v-if="showQuickFilters" class="quick-filters" label="Quick Filters">
+          <!-- Model Components -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">Model Components</label>
+            <div class="d-flex flex-wrap gap-1">
+              <b-form-checkbox-group
+                v-model="selectedComponents"
+                :options="availableComponents"
+                buttons
+                button-variant="outline-primary"
+                size="sm"
+              />
+            </div>
+          </div>
+
+          <!-- CO2 Level (ppm) -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">CO2 Level (ppm)</label>
+            <div class="d-flex align-items-center gap-2">
+              <b-form-input
+                v-model.number="co2Min"
+                type="number"
+                size="sm"
+                placeholder="Min"
+                style="width: 80px"
+              />
+              <span class="text-muted">to</span>
+              <b-form-input
+                v-model.number="co2Max"
+                type="number"
+                size="sm"
+                placeholder="Max"
+                style="width: 80px"
+              />
+              <div class="quick-presets ms-2">
+                <b-button size="sm" variant="outline-secondary" @click="setCO2Preset('preindustrial')">PI (284)</b-button>
+                <b-button size="sm" variant="outline-secondary" @click="setCO2Preset('2xco2')">2xCO2</b-button>
+                <b-button size="sm" variant="outline-secondary" @click="setCO2Preset('4xco2')">4xCO2</b-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paleo Time Presets -->
+          <div v-if="paleoPresets.length > 0" class="quick-filter-row mb-2">
+            <label class="small fw-bold">Paleo Time Period</label>
+            <div class="d-flex flex-wrap gap-1 mb-1">
+              <b-button
+                v-for="preset in paleoPresets"
+                :key="preset.id"
+                size="sm"
+                :variant="selectedPaleoPreset === preset.id ? 'info' : 'outline-info'"
+                :title="preset.description"
+                @click="selectPaleoPreset(preset)"
+              >{{ preset.name }}</b-button>
+              <b-button
+                v-if="selectedPaleoPreset"
+                size="sm"
+                variant="outline-danger"
+                @click="clearPaleoPreset"
+              >Clear</b-button>
+            </div>
+          </div>
+
+          <!-- Experiment Type -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">Experiment Type</label>
+            <b-form-select
+              v-model="experimentType"
+              :options="experimentTypeOptions"
+              size="sm"
+              style="max-width: 200px"
+            />
+          </div>
+
+          <!-- Output Frequency -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">Output Frequency</label>
+            <b-form-select
+              v-model="outputFrequency"
+              :options="frequencyOptions"
+              size="sm"
+              style="max-width: 200px"
+            />
+          </div>
+        </b-form-group>
+
         <b-form-group v-if="conformances.CollectionIdFilter" class="filter-collection" :label="$t('stacCollection', collections.length)" :label-for="ids.collections">
           <multiselect
             :id="ids.collections"
@@ -86,13 +173,55 @@
           <b-form-radio-group v-model="filtersAndOr" :options="andOrOptions" name="logical" size="sm" />
           <b-form-checkbox v-model="filtersNegate" size="sm">{{ $t('search.logical.not') }}</b-form-checkbox>
 
-          <b-dropdown size="sm" :text="$t('search.addFilter')" variant="primary" class="queryables mt-2 mb-3" menu-class="w-100" toggle-class="w-100">
-            <template v-for="queryable in sortedQueryables" :key="queryable.id">
+          <b-dropdown size="sm" :text="$t('search.addFilter')" variant="primary" class="queryables mt-2 mb-3" menu-class="w-100 queryables-menu" toggle-class="w-100">
+            <!-- Fuzzy search input for filtering queryables -->
+            <div class="queryables-search px-2 py-1 border-bottom sticky-top bg-white">
+              <b-form-input
+                v-model="queryableSearchTerm"
+                type="text"
+                size="sm"
+                :placeholder="$t('search.filterProperties') || 'Filter properties...'"
+                @click.stop
+              />
+            </div>
+
+            <!-- Grouped queryables for namelist parameters -->
+            <template v-if="hasNamelistGroups">
+              <div v-for="group in queryableGroups" :key="group.name" class="queryable-group">
+                <div
+                  class="queryable-group-header px-3 py-1 bg-light border-bottom d-flex align-items-center cursor-pointer"
+                  @click.stop="toggleQueryableGroup(group.name)"
+                >
+                  <span class="group-toggle me-2">{{ expandedQueryableGroups[group.name] ? '[-]' : '[+]' }}</span>
+                  <strong>{{ group.title }}</strong>
+                  <b-badge variant="secondary" class="ms-auto">{{ group.queryables.length }}</b-badge>
+                </div>
+                <template v-if="expandedQueryableGroups[group.name]">
+                  <b-dropdown-item
+                    v-for="queryable in group.queryables"
+                    :key="queryable.id"
+                    @click="additionalFieldSelected(queryable)"
+                    link-class="d-flex justify-content-between align-items-center ps-4"
+                  >
+                    <span>{{ queryable.title }}</span>
+                    <b-badge variant="dark" class="ms-2">{{ queryable.shortId || queryable.id }}</b-badge>
+                  </b-dropdown-item>
+                </template>
+              </div>
+            </template>
+
+            <!-- Flat list for non-grouped queryables or when no groups -->
+            <template v-for="queryable in filteredUngroupedQueryables" :key="queryable.id">
               <b-dropdown-item v-if="queryable.supported" @click="additionalFieldSelected(queryable)" link-class="d-flex justify-content-between align-items-center">
                 <span>{{ queryable.title }}</span>
                 <b-badge variant="dark" class="ms-2">{{ queryable.id }}</b-badge>
               </b-dropdown-item>
             </template>
+
+            <!-- No results message -->
+            <div v-if="filteredQueryablesEmpty" class="px-3 py-2 text-muted">
+              {{ $t('search.noMatchingProperties') || 'No matching properties' }}
+            </div>
           </b-dropdown>
 
           <QueryableInput
@@ -165,7 +294,9 @@ import { CollectionCollection, STAC } from 'stac-js';
 import { createSTAC, Collection } from '../models/stac';
 import Cql from '../models/cql2/cql';
 import Queryable from '../models/cql2/queryable';
-import CqlLogicalOperator, { CqlNot } from '../models/cql2/operators/logical';
+import CqlLogicalOperator, { CqlNot, CqlAnd } from '../models/cql2/operators/logical';
+import { CqlGreaterThanEqual, CqlLessThanEqual, CqlLike } from '../models/cql2/operators/comparison';
+import { CqlIn } from '../models/cql2/operators/array';
 import { stacRequest } from '../store/utils';
 
 function getQueryDefaults() {
@@ -244,7 +375,18 @@ export default defineComponent({
       hasAllCollections: false,
       collections: [],
       collectionsLoadingTimer: null,
-      additionalCollectionCount: 0
+      additionalCollectionCount: 0,
+      // Queryable search and grouping
+      queryableSearchTerm: '',
+      expandedQueryableGroups: {},
+      // Quick filters for climate scientists
+      selectedComponents: [],
+      co2Min: null,
+      co2Max: null,
+      experimentType: null,
+      outputFrequency: null,
+      paleoPresets: [],
+      selectedPaleoPreset: null
     }, getDefaults());
   },
   computed: {
@@ -320,6 +462,124 @@ export default defineComponent({
       }
       const collator = new Intl.Collator(this.uiLanguage);
       return this.queryables.slice(0).sort((a, b) => collator.compare(a.title, b.title));
+    },
+    // Filter queryables by search term (fuzzy-ish substring matching)
+    filteredQueryables() {
+      if (!this.queryableSearchTerm) {
+        return this.sortedQueryables;
+      }
+      const term = this.queryableSearchTerm.toLowerCase();
+      return this.sortedQueryables.filter(q => {
+        // Match against title, id, or any part of the property name
+        return (
+          q.title.toLowerCase().includes(term) ||
+          q.id.toLowerCase().includes(term)
+        );
+      });
+    },
+    // Check if we have namelist groups to display
+    hasNamelistGroups() {
+      return this.filteredQueryables.some(q => q.id.startsWith('nml:'));
+    },
+    // Group namelist parameters by their group name (e.g., nml:runctl:*, nml:radctl:*)
+    queryableGroups() {
+      const groups = {};
+      const collator = new Intl.Collator(this.uiLanguage);
+
+      this.filteredQueryables.forEach(q => {
+        if (!q.supported) return;
+
+        // Parse namelist properties: nml:{group}:{param} or nml:{file}:{group}:{param}
+        if (q.id.startsWith('nml:')) {
+          const parts = q.id.split(':');
+          let groupName, shortId;
+
+          if (parts.length >= 3) {
+            // nml:radctl:co2vmr -> group=radctl, shortId=co2vmr
+            // nml:namelist.echam:radctl:co2vmr -> group=namelist.echam:radctl, shortId=co2vmr
+            groupName = parts.slice(1, -1).join(':');
+            shortId = parts[parts.length - 1];
+          } else {
+            // nml:groups or similar
+            groupName = 'general';
+            shortId = parts.slice(1).join(':');
+          }
+
+          if (!groups[groupName]) {
+            groups[groupName] = {
+              name: groupName,
+              title: this.formatGroupTitle(groupName),
+              queryables: []
+            };
+          }
+          // Add shortId for cleaner display in dropdown
+          const qWithShortId = Object.assign({}, q, { shortId });
+          groups[groupName].queryables.push(qWithShortId);
+        }
+      });
+
+      // Sort queryables within each group
+      Object.values(groups).forEach(group => {
+        group.queryables.sort((a, b) => collator.compare(a.title, b.title));
+      });
+
+      // Return sorted groups
+      return Object.values(groups).sort((a, b) => collator.compare(a.title, b.title));
+    },
+    // Queryables that are NOT in a group (non-namelist properties)
+    filteredUngroupedQueryables() {
+      return this.filteredQueryables.filter(q => {
+        if (!q.supported) return false;
+        // Exclude namelist properties (they're shown in groups)
+        if (q.id.startsWith('nml:') && this.hasNamelistGroups) return false;
+        return true;
+      });
+    },
+    // Check if filtered results are empty
+    filteredQueryablesEmpty() {
+      if (!this.queryableSearchTerm) return false;
+      return this.filteredUngroupedQueryables.length === 0 &&
+             this.queryableGroups.every(g => g.queryables.length === 0);
+    },
+    // Quick filters visibility (show when we have queryables or collections)
+    showQuickFilters() {
+      return this.type === 'Collections' || (this.cql && this.queryables && this.queryables.length > 0);
+    },
+    // Available model components for quick filter
+    availableComponents() {
+      // Common ESM model components
+      return [
+        { text: 'ECHAM', value: 'echam' },
+        { text: 'FESOM', value: 'fesom' },
+        { text: 'JSBACH', value: 'jsbach' },
+        { text: 'HDMODEL', value: 'hdmodel' },
+        { text: 'OASIS', value: 'oasis' },
+        { text: 'RECOM', value: 'recom' }
+      ];
+    },
+    // Experiment type options
+    experimentTypeOptions() {
+      return [
+        { value: null, text: 'Any Type' },
+        { value: 'control', text: 'Control / PI-Control' },
+        { value: 'historical', text: 'Historical' },
+        { value: 'scenario', text: 'Scenario (RCP/SSP)' },
+        { value: 'paleo', text: 'Paleo' },
+        { value: 'sensitivity', text: 'Sensitivity' },
+        { value: 'spinup', text: 'Spin-up' }
+      ];
+    },
+    // Output frequency options
+    frequencyOptions() {
+      return [
+        { value: null, text: 'Any Frequency' },
+        { value: 'mon', text: 'Monthly' },
+        { value: 'day', text: 'Daily' },
+        { value: '6hr', text: '6-hourly' },
+        { value: '3hr', text: '3-hourly' },
+        { value: '1hr', text: 'Hourly' },
+        { value: 'subhr', text: 'Sub-hourly' }
+      ];
     },
     maxItems() {
       return this.maxEntriesPerPage || 1000;
@@ -418,6 +678,11 @@ export default defineComponent({
           .catch(error => console.error(error))
       );
     }
+    // Load paleo presets for quick filters
+    promises.push(
+      this.loadPaleoPresets()
+        .catch(error => console.warn('Failed to load paleo presets:', error))
+    );
     Promise.all(promises).finally(() => this.loaded = true);
   },
   methods: {
@@ -580,6 +845,37 @@ export default defineComponent({
         this.query.sortby = this.formatSort();
       }
       let filters = this.buildFilter();
+
+      // Get quick filters and convert to CQL format
+      const quickFilters = this.buildQuickFilters();
+      if (quickFilters.length > 0) {
+        const quickCqlArgs = quickFilters.map(qf => {
+          // Create a simple queryable for the field
+          const queryable = { id: qf.field };
+
+          if (qf.op === '>=') {
+            return new CqlGreaterThanEqual(queryable, qf.value);
+          } else if (qf.op === '<=') {
+            return new CqlLessThanEqual(queryable, qf.value);
+          } else if (qf.op === 'like') {
+            return new CqlLike(queryable, qf.value);
+          } else if (qf.op === 'in' && qf.values) {
+            return new CqlIn(queryable, qf.values);
+          }
+          return null;
+        }).filter(f => f !== null);
+
+        if (quickCqlArgs.length > 0) {
+          const quickCql = new CqlAnd(quickCqlArgs);
+          if (filters) {
+            // Combine manual filters with quick filters using AND
+            filters = new Cql(new CqlAnd([filters.filter, quickCql]));
+          } else {
+            filters = new Cql(quickCql);
+          }
+        }
+      }
+
       this.query.filters = filters;
       this.$emit('input', this.query, false);
     },
@@ -624,6 +920,135 @@ export default defineComponent({
       else {
         return null;
       }
+    },
+    // Toggle a queryable group's expanded state
+    toggleQueryableGroup(groupName) {
+      this.expandedQueryableGroups[groupName] = !this.expandedQueryableGroups[groupName];
+    },
+    // Format a group name into a human-readable title
+    formatGroupTitle(groupName) {
+      // Handle namelist file:group format like "namelist.echam:radctl"
+      if (groupName.includes(':')) {
+        const parts = groupName.split(':');
+        const file = parts[0].replace('namelist.', '');
+        const group = parts.slice(1).join(':');
+        return `${file.toUpperCase()} / ${group}`;
+      }
+      // Simple group name like "radctl"
+      return groupName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    },
+    // Load paleo presets from API
+    async loadPaleoPresets() {
+      try {
+        // Try to fetch from the API
+        const apiUrl = this.stac?.getAbsoluteUrl?.() || '';
+        const baseUrl = apiUrl ? new URL(apiUrl).origin : '';
+        if (!baseUrl) return;
+
+        const response = await fetch(`${baseUrl}/paleo-presets`);
+        if (response.ok) {
+          const data = await response.json();
+          this.paleoPresets = data.presets || [];
+        }
+      } catch (error) {
+        console.warn('Could not load paleo presets:', error);
+        // Use fallback presets
+        this.paleoPresets = [
+          { id: 'lgm', name: 'LGM', display: '21.0 ka', years_bp: 21000, description: 'Last Glacial Maximum' },
+          { id: 'mid_holocene', name: 'Mid-Holocene', display: '6.0 ka', years_bp: 6000, description: 'Mid-Holocene warm period' },
+          { id: 'eemian', name: 'Eemian', display: '125.0 ka', years_bp: 125000, description: 'Last Interglacial' },
+          { id: 'preindustrial', name: 'PI', display: '1850 CE', years_bp: 100, description: 'Pre-industrial' }
+        ];
+      }
+    },
+    // Set CO2 preset values
+    setCO2Preset(preset) {
+      const presets = {
+        'preindustrial': { min: 280, max: 290 },
+        '2xco2': { min: 550, max: 570 },
+        '4xco2': { min: 1100, max: 1140 }
+      };
+      const p = presets[preset];
+      if (p) {
+        this.co2Min = p.min;
+        this.co2Max = p.max;
+      }
+    },
+    // Select a paleo time preset
+    selectPaleoPreset(preset) {
+      this.selectedPaleoPreset = preset.id;
+      // Add filter for paleo time if we have the queryable
+      // This will be included in the buildFilter when submitting
+    },
+    // Clear paleo preset selection
+    clearPaleoPreset() {
+      this.selectedPaleoPreset = null;
+    },
+    // Build quick filters into CQL2 format
+    buildQuickFilters() {
+      const quickFilters = [];
+
+      // Model component filter (IN clause)
+      if (this.selectedComponents.length > 0) {
+        quickFilters.push({
+          field: 'model',
+          op: 'in',
+          values: this.selectedComponents
+        });
+      }
+
+      // CO2 range filter (converted from ppm to decimal)
+      if (this.co2Min !== null || this.co2Max !== null) {
+        // Look for CO2 VMR queryable
+        const co2Field = 'nml:radctl:co2vmr';
+        if (this.co2Min !== null) {
+          // Convert ppm to decimal (volume mixing ratio)
+          const minDecimal = this.co2Min * 1e-6;
+          quickFilters.push({
+            field: co2Field,
+            op: '>=',
+            value: minDecimal
+          });
+        }
+        if (this.co2Max !== null) {
+          const maxDecimal = this.co2Max * 1e-6;
+          quickFilters.push({
+            field: co2Field,
+            op: '<=',
+            value: maxDecimal
+          });
+        }
+      }
+
+      // Experiment type filter (pattern match on collection ID or explicit field)
+      if (this.experimentType) {
+        quickFilters.push({
+          field: 'experiment_type',
+          op: 'like',
+          value: `%${this.experimentType}%`
+        });
+      }
+
+      // Paleo time filter (years before present)
+      if (this.selectedPaleoPreset) {
+        const preset = this.paleoPresets.find(p => p.id === this.selectedPaleoPreset);
+        if (preset && preset.years_bp !== undefined) {
+          // Filter by paleo time - allow some range around the target year
+          const tolerance = preset.years_bp * 0.1; // 10% tolerance
+          quickFilters.push({
+            field: 'paleo:years_bp',
+            op: '>=',
+            value: preset.years_bp - tolerance
+          });
+          quickFilters.push({
+            field: 'paleo:years_bp',
+            op: '<=',
+            value: preset.years_bp + tolerance
+          });
+        }
+      }
+
+      return quickFilters;
     }
   }
 });
@@ -632,9 +1057,64 @@ export default defineComponent({
 <style lang="scss">
 @import '../theme/datepicker.scss';
 
+// Quick filters section styling
+.quick-filters {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+
+  .quick-filter-row {
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #495057;
+    }
+  }
+
+  .quick-presets {
+    display: flex;
+    gap: 0.25rem;
+  }
+}
+
 .queryables .dropdown-menu {
   max-height: 90vh;
   overflow: auto;
+}
+
+.queryables-menu {
+  min-width: 300px;
+}
+
+.queryables-search {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.queryable-group {
+  border-bottom: 1px solid #eee;
+
+  .queryable-group-header {
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9em;
+
+    &:hover {
+      background-color: #e9ecef !important;
+    }
+
+    .group-toggle {
+      font-family: monospace;
+      font-weight: bold;
+      color: #6c757d;
+    }
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 // General item filter style
