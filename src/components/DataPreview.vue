@@ -18,17 +18,14 @@
 
     <!-- Interactive mode: iframe -->
     <div v-if="mode === 'interactive'" class="interactive-preview">
-      <div v-if="isCollection" class="alert alert-info">
-        Select an item from the collection to preview its data interactively.
-      </div>
-      <div v-else-if="iframeLoading" class="text-center p-4">
+      <div v-if="iframeLoading" class="text-center p-4">
         <b-spinner /> Loading interactive preview...
       </div>
       <iframe
-        v-show="!iframeLoading && !isCollection"
+        v-show="!iframeLoading"
         ref="previewIframe"
         :src="interactiveUrl"
-        class="preview-iframe"
+        :class="['preview-iframe', isCollection ? 'preview-iframe-tall' : '']"
         @load="handleIframeLoad"
         @error="handleIframeError"
       />
@@ -155,10 +152,15 @@ export default defineComponent({
       return this.item?.collection;
     },
     interactiveUrl() {
-      if (!this.item?.id || this.isCollection) return null;
+      if (!this.item?.id) return null;
       const params = new URLSearchParams({
         stac_api: this.stacApi
       });
+      // Collection-level interactive preview
+      if (this.isCollection) {
+        return `${this.vizServer}/preview/collection/${encodeURIComponent(this.collectionId)}/panel?${params}`;
+      }
+      // Item-level interactive preview
       if (this.collectionId) {
         params.set('collection_id', this.collectionId);
       }
@@ -211,10 +213,13 @@ export default defineComponent({
     async fetchMetadata() {
       if (!this.item?.id) return;
 
-      // Collections don't have direct data - show message instead
+      // Collections use the interactive collection-level preview;
+      // static mode metadata is not available at collection level.
       if (this.isCollection) {
         this.loading = false;
-        this.error = 'Select an item from the collection to preview its data.';
+        if (this.mode === 'static') {
+          this.error = 'Static preview is not available for collections. Switch to Interactive mode.';
+        }
         return;
       }
 
@@ -282,6 +287,9 @@ export default defineComponent({
   height: 350px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+}
+.preview-iframe-tall {
+  height: 600px;
 }
 .preview-image img {
   max-height: 350px;
