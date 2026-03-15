@@ -107,8 +107,8 @@ const mockVizServer = async (page, options = {}) => {
     });
   });
 
-  // Mock the Panel iframe endpoint
-  await page.route(`${VIZ_SERVER_URL}/panel/**`, async (route) => {
+  // Mock the Panel interactive endpoint (/preview/*/panel redirects to /_panel/)
+  await page.route(`${VIZ_SERVER_URL}/preview/*/panel**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'text/html',
@@ -165,7 +165,7 @@ const createDataPreviewTestPage = (item, options = {}) => {
               </div>
               <iframe
                 id="preview-iframe"
-                src="${vizServer}/panel/?item_id=${item.id}&stac_api=${encodeURIComponent(stacApi)}${item.collection ? '&collection_id=' + item.collection : ''}"
+                src="${vizServer}/preview/${encodeURIComponent(item.id)}/panel?stac_api=${encodeURIComponent(stacApi)}${item.collection ? '&collection_id=' + item.collection : ''}"
                 class="preview-iframe"
                 style="display: none;"
                 onload="handleIframeLoad()"
@@ -471,9 +471,8 @@ test.describe('DataPreview Component', () => {
       const iframe = page.locator('#preview-iframe');
       const src = await iframe.getAttribute('src');
 
-      // Verify URL structure
-      expect(src).toContain(`${VIZ_SERVER_URL}/panel/`);
-      expect(src).toContain(`item_id=${STAC_ITEM_FIXTURE.id}`);
+      // Verify URL structure: /preview/{item_id}/panel?stac_api=...&collection_id=...
+      expect(src).toContain(`${VIZ_SERVER_URL}/preview/${STAC_ITEM_FIXTURE.id}/panel`);
       expect(src).toContain(`stac_api=${encodeURIComponent(STAC_API_URL)}`);
       expect(src).toContain(`collection_id=${STAC_ITEM_FIXTURE.collection}`);
     });
