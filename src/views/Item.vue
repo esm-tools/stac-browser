@@ -5,11 +5,21 @@
         <section class="mb-4">
           <b-card no-body class="maps-preview">
             <b-tabs v-model="tab" ref="tabs" card pills vertical end>
-              <b-tab :title="$t('map')" no-body>
-                <MapView :stac="data" :assets="selectedAssets" @changed="dataChanged" @empty="handleEmptyMap" />
+              <!-- Preview tab: only when vizServer is available -->
+              <b-tab v-if="vizServer" :title="$t('dataPreview') || 'Preview'" no-body>
+                <DataPreview
+                  :item="data"
+                  :viz-server="vizServer"
+                  :stac-api="stacApi"
+                />
               </b-tab>
+              <!-- Thumbnails tab -->
               <b-tab v-if="hasThumbnails" :title="$t('thumbnails')" no-body>
                 <Thumbnails :thumbnails="thumbnails" />
+              </b-tab>
+              <!-- Map tab: fallback when vizServer is NOT available -->
+              <b-tab v-if="!vizServer" :title="$t('map')" no-body>
+                <MapView :stac="data" :assets="selectedAssets" @changed="dataChanged" @empty="handleEmptyMap" />
               </b-tab>
             </b-tabs>
           </b-card>
@@ -30,27 +40,6 @@
         <CollectionLink v-if="collectionLink" :link="collectionLink" />
         <Providers v-if="data.properties.providers" :providers="data.properties.providers" />
         <MetadataGroups :data="data" type="Item" :ignoreFields="ignoredMetadataFields" />
-
-        <!-- Data Preview Section -->
-        <section v-if="vizServer" class="data-preview-section mb-4">
-          <h2>
-            <b-button
-              variant="link"
-              class="p-0 text-decoration-none"
-              @click="previewExpanded = !previewExpanded"
-            >
-              {{ previewExpanded ? '[-]' : '[+]' }} {{ $t('dataPreview') || 'Data Preview' }}
-            </b-button>
-          </h2>
-          <b-collapse v-model="previewExpanded">
-            <DataPreview
-              v-if="previewExpanded"
-              :item="data"
-              :viz-server="vizServer"
-              :stac-api="stacApi"
-            />
-          </b-collapse>
-        </section>
       </b-col>
     </b-row>
   </div>
@@ -59,7 +48,7 @@
 <script>
 import { defineComponent, defineAsyncComponent } from 'vue';
 import { mapState, mapGetters } from 'vuex';
-import { BTab, BTabs, BCard, BCollapse, BButton } from 'bootstrap-vue-next';
+import { BTab, BTabs, BCard } from 'bootstrap-vue-next';
 import Description from '../components/Description.vue';
 import ReadMore from "../components/ReadMore.vue";
 import ShowAssetLinkMixin from '../components/ShowAssetLinkMixin';
@@ -72,8 +61,6 @@ export default defineComponent({
     BTab,
     BTabs,
     BCard,
-    BCollapse,
-    BButton,
     AnonymizedNotice: defineAsyncComponent(() => import('../components/AnonymizedNotice.vue')),
     Assets: defineAsyncComponent(() => import('../components/Assets.vue')),
     CollectionLink: defineAsyncComponent(() => import('../components/CollectionLink.vue')),
@@ -94,7 +81,6 @@ export default defineComponent({
   ],
   data() {
     return {
-      previewExpanded: false,
       ignoredMetadataFields: [
         'description',
         'keywords',

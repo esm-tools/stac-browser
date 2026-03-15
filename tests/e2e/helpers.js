@@ -9,15 +9,26 @@ const API_ROOT_URL = "https://earth-search.aws.test.com/v1";
 const API_COLLECTIONS_URL = "https://earth-search.aws.test.com/v1/collections";
 
 // todo: Move STAC documents to separate files
+const API_QUERYABLES_URL = "https://earth-search.aws.test.com/v1/queryables";
+
 const API_ROOT_FIXTURE = {
   stac_version: "1.0.0",
   id: "test-api",
   title: "Test API",
   description: "Test API root",
   conformsTo: [
+    "https://api.stacspec.org/v1.0.0/core",
     "https://api.stacspec.org/v1.0.0/item-search",
     "https://api.stacspec.org/v1.0.0/item-search#sort",
+    "https://api.stacspec.org/v1.0.0/item-search#filter",  // Required for CQL filters in item search
     "https://api.stacspec.org/v1.0.0/collection-search",
+    "https://api.stacspec.org/v1.0.0/collection-search#filter",  // Required for CQL filters in collection search
+    // CQL2 conformances - required for Quick Filters to appear
+    "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
+    "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/features-filter",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
+    "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
   ],
   links: [
     {
@@ -35,6 +46,12 @@ const API_ROOT_FIXTURE = {
       rel: "collections",
       type: "application/json",
       href: API_COLLECTIONS_URL,
+    },
+    {
+      rel: "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+      type: "application/schema+json",
+      title: "Queryables",
+      href: API_QUERYABLES_URL,
     },
   ],
 };
@@ -89,6 +106,12 @@ const API_COLLECTIONS_FIXTURE = {
       type: "application/json",
       href: API_ROOT_URL,
     },
+    {
+      rel: "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+      type: "application/schema+json",
+      title: "Queryables",
+      href: API_QUERYABLES_URL,
+    },
   ],
   context: {
     page: 1,
@@ -124,29 +147,8 @@ export const mockApiRootAndCollections = async (page) => {
   });
 };
 
-export const waitForMapReady = async (page) => {
-  const mapViewport = page.locator(".map .ol-viewport");
-  await expect(mapViewport).toBeVisible();
-
-  const mapCanvas = page.locator(".map .ol-viewport canvas.ol-layer");
-  await expect(mapCanvas).toBeVisible();
-
-  return mapViewport;
-};
-
-export const waitForBboxInputsPopulated = async (page) => {
-  const westLonInput = page.getByLabel(/west longitude/i);
-  const southLatInput = page.getByLabel(/south latitude/i);
-  const eastLonInput = page.getByLabel(/east longitude/i);
-  const northLatInput = page.getByLabel(/north latitude/i);
-
-  await expect(westLonInput).not.toHaveValue("");
-  await expect(southLatInput).not.toHaveValue("");
-  await expect(eastLonInput).not.toHaveValue("");
-  await expect(northLatInput).not.toHaveValue("");
-
-  return { westLonInput, southLatInput, eastLonInput, northLatInput };
-};
+// NOTE: waitForMapReady and waitForBboxInputsPopulated removed
+// Spatial extent filtering not used - all climate models are global
 
 export const waitForSearchPost = async (page, responseBody = null) => {
   let handler;

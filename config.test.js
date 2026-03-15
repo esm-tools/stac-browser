@@ -1,33 +1,16 @@
+// Test configuration for Playwright e2e tests
+// Uses null catalogUrl so external paths work correctly
 export default {
-    catalogUrl: 'http://albedo1:23100',
-    catalogTitle: "STAC Browser",
+    catalogUrl: null,  // Tests use /search/external/... paths which work without a default catalog
+    catalogTitle: "STAC Browser (Test)",
     catalogImage: null,
-    allowExternalAccess: true, // Must be true if catalogUrl is not given
+    allowExternalAccess: true,
     allowedDomains: [],
-    detectLocaleFromBrowser: true,
-    storeLocale: true,
+    detectLocaleFromBrowser: false,
+    storeLocale: false,
     locale: "en",
     fallbackLocale: "en",
-    supportedLocales: [
-        "de",
-        "ar",
-//      "de-CH",
-        "es",
-        "en",
-//      "en-GB",
-//      "en-US",
-        "fr",
-//      "fr-CA",
-//      "fr-CH",
-        "it",
-//      "it-CH",
-        "ro",
-        "ja",
-        "pt",
-//      "pt-BR",
-        "id",
-        "pl"
-    ],
+    supportedLocales: ["en"],
     apiCatalogPriority: null,
     useTileLayerAsFallback: false,
     displayGeoTiffByDefault: false,
@@ -50,10 +33,10 @@ export default {
     crossOriginMedia: null,
     requestHeaders: {},
     requestQueryParameters: {},
-    socialSharing: ['email', 'bsky', 'mastodon', 'x'],
+    socialSharing: [],
     preprocessSTAC: null,
     authConfig: null,
     crs: {},
     footerLinks: null,
-    vizServer: 'http://albedo1:23101' // URL of visualization server for data previews (e.g., 'http://localhost:8001')
+    vizServer: null  // No viz server for tests - preview endpoints can be mocked
 };

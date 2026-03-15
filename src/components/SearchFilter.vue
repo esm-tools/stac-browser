@@ -43,10 +43,8 @@
           />
         </b-form-group>
 
-        <b-form-group v-if="canFilterExtents" class="filter-bbox" :label="$t('search.spatialExtent')" :label-for="ids.bbox">
-          <b-form-checkbox :id="ids.bbox" v-model="provideBBox" value="1">{{ $t('search.filterBySpatialExtent') }}</b-form-checkbox>
-          <MapSelect class="mb-4" v-if="provideBBox" v-model="query.bbox" :stac="stac" />
-        </b-form-group>
+        <!-- NOTE: Spatial Extent removed - all climate models are global -->
+        <!-- May be re-added for paleoclimate proxy data -->
 
         <!-- Climate Scientist Quick Filters -->
         <b-form-group v-if="showQuickFilters" class="quick-filters" label="Quick Filters">
@@ -88,6 +86,50 @@
                 <b-button size="sm" variant="outline-secondary" @click="setCO2Preset('2xco2')">2xCO2</b-button>
                 <b-button size="sm" variant="outline-secondary" @click="setCO2Preset('4xco2')">4xCO2</b-button>
               </div>
+            </div>
+          </div>
+
+          <!-- CH4 Level (ppb) -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">CH4 Level (ppb)</label>
+            <div class="d-flex align-items-center gap-2">
+              <b-form-input
+                v-model.number="ch4Min"
+                type="number"
+                size="sm"
+                placeholder="Min"
+                style="width: 80px"
+              />
+              <span class="text-muted">to</span>
+              <b-form-input
+                v-model.number="ch4Max"
+                type="number"
+                size="sm"
+                placeholder="Max"
+                style="width: 80px"
+              />
+            </div>
+          </div>
+
+          <!-- N2O Level (ppb) -->
+          <div class="quick-filter-row mb-2">
+            <label class="small fw-bold">N2O Level (ppb)</label>
+            <div class="d-flex align-items-center gap-2">
+              <b-form-input
+                v-model.number="n2oMin"
+                type="number"
+                size="sm"
+                placeholder="Min"
+                style="width: 80px"
+              />
+              <span class="text-muted">to</span>
+              <b-form-input
+                v-model.number="n2oMax"
+                type="number"
+                size="sm"
+                placeholder="Max"
+                style="width: 80px"
+              />
             </div>
           </div>
 
@@ -297,6 +339,7 @@ import Queryable from '../models/cql2/queryable';
 import CqlLogicalOperator, { CqlNot, CqlAnd } from '../models/cql2/operators/logical';
 import { CqlGreaterThanEqual, CqlLessThanEqual, CqlLike } from '../models/cql2/operators/comparison';
 import { CqlIn } from '../models/cql2/operators/array';
+import CqlValue from '../models/cql2/value';
 import { stacRequest } from '../store/utils';
 
 function getQueryDefaults() {
@@ -323,7 +366,18 @@ function getDefaults() {
     filtersAndOr: 'and',
     filtersNegate: false,
     filters: [],
-    selectedCollections: []
+    selectedCollections: [],
+    // Quick filter defaults (for reset)
+    selectedComponents: [],
+    co2Min: null,
+    co2Max: null,
+    ch4Min: null,
+    ch4Max: null,
+    n2oMin: null,
+    n2oMax: null,
+    experimentType: null,
+    outputFrequency: null,
+    selectedPaleoPreset: null
   };
 }
 
@@ -383,6 +437,10 @@ export default defineComponent({
       selectedComponents: [],
       co2Min: null,
       co2Max: null,
+      ch4Min: null,
+      ch4Max: null,
+      n2oMin: null,
+      n2oMax: null,
       experimentType: null,
       outputFrequency: null,
       paleoPresets: [],
@@ -850,17 +908,17 @@ export default defineComponent({
       const quickFilters = this.buildQuickFilters();
       if (quickFilters.length > 0) {
         const quickCqlArgs = quickFilters.map(qf => {
-          // Create a simple queryable for the field
-          const queryable = { id: qf.field };
+          // Create a queryable-like object with required methods
+          const queryable = new Queryable(qf.field, { type: 'number' });
 
           if (qf.op === '>=') {
-            return new CqlGreaterThanEqual(queryable, qf.value);
+            return new CqlGreaterThanEqual(queryable, CqlValue.create(qf.value));
           } else if (qf.op === '<=') {
-            return new CqlLessThanEqual(queryable, qf.value);
+            return new CqlLessThanEqual(queryable, CqlValue.create(qf.value));
           } else if (qf.op === 'like') {
-            return new CqlLike(queryable, qf.value);
+            return new CqlLike(queryable, CqlValue.create(qf.value));
           } else if (qf.op === 'in' && qf.values) {
-            return new CqlIn(queryable, qf.values);
+            return new CqlIn(queryable, CqlValue.create(qf.values));
           }
           return null;
         }).filter(f => f !== null);
@@ -1014,6 +1072,50 @@ export default defineComponent({
           const maxDecimal = this.co2Max * 1e-6;
           quickFilters.push({
             field: co2Field,
+            op: '<=',
+            value: maxDecimal
+          });
+        }
+      }
+
+      // CH4 range filter (converted from ppb to decimal)
+      if (this.ch4Min !== null || this.ch4Max !== null) {
+        const ch4Field = 'nml:radctl:ch4vmr';
+        if (this.ch4Min !== null) {
+          // Convert ppb to decimal (volume mixing ratio)
+          const minDecimal = this.ch4Min * 1e-9;
+          quickFilters.push({
+            field: ch4Field,
+            op: '>=',
+            value: minDecimal
+          });
+        }
+        if (this.ch4Max !== null) {
+          const maxDecimal = this.ch4Max * 1e-9;
+          quickFilters.push({
+            field: ch4Field,
+            op: '<=',
+            value: maxDecimal
+          });
+        }
+      }
+
+      // N2O range filter (converted from ppb to decimal)
+      if (this.n2oMin !== null || this.n2oMax !== null) {
+        const n2oField = 'nml:radctl:n2ovmr';
+        if (this.n2oMin !== null) {
+          // Convert ppb to decimal (volume mixing ratio)
+          const minDecimal = this.n2oMin * 1e-9;
+          quickFilters.push({
+            field: n2oField,
+            op: '>=',
+            value: minDecimal
+          });
+        }
+        if (this.n2oMax !== null) {
+          const maxDecimal = this.n2oMax * 1e-9;
+          quickFilters.push({
+            field: n2oField,
             op: '<=',
             value: maxDecimal
           });

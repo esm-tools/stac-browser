@@ -66,18 +66,19 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: process.env.CI 
+  webServer: process.env.CI
     ? {
-        // In CI: Build and serve the production build
-        command: 'npm run build && npx vite preview --port 4173 --strictPort',
+        // In CI: Build and serve the production build using test config
+        command: 'npm run build:test && npx vite preview --port 4173 --strictPort',
         url: 'http://localhost:4173',
         reuseExistingServer: false,
         timeout: 120 * 1000,
       }
     : {
-        command: 'npm start',
+        // Local dev: Use test config (no albedo1 references)
+        command: 'npm run start:test',
         url: 'http://localhost:8080',
-        reuseExistingServer: true,
+        reuseExistingServer: false,  // Always start fresh with test config
         timeout: 120 * 1000,
       },
 });

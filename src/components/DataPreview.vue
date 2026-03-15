@@ -156,11 +156,16 @@ export default defineComponent({
     },
     interactiveUrl() {
       if (!this.item?.id || this.isCollection) return null;
-      let url = `${this.vizServer}/app?item_id=${this.item.id}&stac_api=${encodeURIComponent(this.stacApi)}`;
+      // Panel app is served at /panel/ with query parameters
+      // item_id is passed as a query param, not a path segment
+      const params = new URLSearchParams({
+        item_id: this.item.id,
+        stac_api: this.stacApi
+      });
       if (this.collectionId) {
-        url += `&collection_id=${encodeURIComponent(this.collectionId)}`;
+        params.set('collection_id', this.collectionId);
       }
-      return url;
+      return `${this.vizServer}/panel/?${params}`;
     },
     staticPreviewUrl() {
       if (!this.selectedVariable || !this.item?.id || this.isCollection) return null;

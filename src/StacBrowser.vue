@@ -80,6 +80,9 @@
         </template>
       </i18n-t>
     </footer>
+    <!-- Collection Comparison UI -->
+    <CompareButton />
+    <CollectionComparison />
     <b-popover
       v-if="root" id="popover-root" class="popover-large" target="popover-root-btn"
       placement="bottom" :title="serviceType" teleport-to="#stac-browser"
@@ -139,6 +142,8 @@ export default defineComponent({
     BIconLock,
     BIconUnlock,
     BPopover: defineAsyncComponent(() => import('bootstrap-vue-next').then(m => m.BPopover)),
+    CompareButton: defineAsyncComponent(() => import('./components/CompareButton.vue')),
+    CollectionComparison: defineAsyncComponent(() => import('./components/CollectionComparison.vue')),
     ErrorAlert,
     LanguageChooser: defineAsyncComponent(() => import('./components/LanguageChooser.vue')),
     RootStats: defineAsyncComponent(() => import('./components/RootStats.vue')),

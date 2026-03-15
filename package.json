@@ -6,7 +6,9 @@
   "main": "src/main.js",
   "scripts": {
     "start": "vite",
+    "start:test": "SB_CONFIG=./config.test.js vite",
     "build": "vite build",
+    "build:test": "SB_CONFIG=./config.test.js vite build",
     "build:preview": "vite build && vite preview",
     "build:report": "vite build --mode report",
     "build:minimal": "vite build --mode minimal",
