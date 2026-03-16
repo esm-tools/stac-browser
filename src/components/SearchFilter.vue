@@ -997,26 +997,30 @@ export default defineComponent({
     },
     // Load paleo presets from API
     async loadPaleoPresets() {
+      const fallbackPresets = [
+        { id: 'lgm', name: 'LGM', display: '21.0 ka', years_bp: 21000, description: 'Last Glacial Maximum' },
+        { id: 'mid_holocene', name: 'Mid-Holocene', display: '6.0 ka', years_bp: 6000, description: 'Mid-Holocene warm period' },
+        { id: 'eemian', name: 'Eemian', display: '125.0 ka', years_bp: 125000, description: 'Last Interglacial' },
+        { id: 'preindustrial', name: 'PI', display: '1850 CE', years_bp: 100, description: 'Pre-industrial' }
+      ];
       try {
-        // Try to fetch from the API
         const apiUrl = this.stac?.getAbsoluteUrl?.() || '';
         const baseUrl = apiUrl ? new URL(apiUrl).origin : '';
-        if (!baseUrl) return;
+        if (!baseUrl) {
+          this.paleoPresets = fallbackPresets;
+          return;
+        }
 
         const response = await fetch(`${baseUrl}/paleo-presets`);
         if (response.ok) {
           const data = await response.json();
-          this.paleoPresets = data.presets || [];
+          this.paleoPresets = data.presets || fallbackPresets;
+        } else {
+          this.paleoPresets = fallbackPresets;
         }
       } catch (error) {
         console.warn('Could not load paleo presets:', error);
-        // Use fallback presets
-        this.paleoPresets = [
-          { id: 'lgm', name: 'LGM', display: '21.0 ka', years_bp: 21000, description: 'Last Glacial Maximum' },
-          { id: 'mid_holocene', name: 'Mid-Holocene', display: '6.0 ka', years_bp: 6000, description: 'Mid-Holocene warm period' },
-          { id: 'eemian', name: 'Eemian', display: '125.0 ka', years_bp: 125000, description: 'Last Interglacial' },
-          { id: 'preindustrial', name: 'PI', display: '1850 CE', years_bp: 100, description: 'Pre-industrial' }
-        ];
+        this.paleoPresets = fallbackPresets;
       }
     },
     // Set CO2 preset values
