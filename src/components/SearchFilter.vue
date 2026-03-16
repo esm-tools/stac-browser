@@ -443,7 +443,12 @@ export default defineComponent({
       n2oMax: null,
       experimentType: null,
       outputFrequency: null,
-      paleoPresets: [],
+      paleoPresets: [
+        { id: 'lgm', name: 'LGM', display: '21.0 ka', years_bp: 21000, description: 'Last Glacial Maximum' },
+        { id: 'mid_holocene', name: 'Mid-Holocene', display: '6.0 ka', years_bp: 6000, description: 'Mid-Holocene warm period' },
+        { id: 'eemian', name: 'Eemian', display: '125.0 ka', years_bp: 125000, description: 'Last Interglacial' },
+        { id: 'preindustrial', name: 'PI', display: '1850 CE', years_bp: 100, description: 'Pre-industrial' }
+      ],
       selectedPaleoPreset: null
     }, getDefaults());
   },
