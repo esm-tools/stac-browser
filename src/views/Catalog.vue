@@ -3,7 +3,10 @@
     <b-row>
       <b-col class="meta">
         <section class="intro">
-          <h2>{{ $t('description') }}</h2>
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h2>{{ $t('description') }}</h2>
+            <AddToCollection v-if="isCollection && data.id" :item-id="data.id" />
+          </div>
           <DeprecationNotice v-if="showDeprecation" :data="data" />
           <AnonymizedNotice v-if="data['anon:warning']" :warning="data['anon:warning']" />
           <ReadMore v-if="data.description" :lines="10" :text="$t('read.more')" :text-less="$t('read.less')">
@@ -92,6 +95,7 @@ export default defineComponent({
     BTab,
     BTabs,
     BCard,
+    AddToCollection: defineAsyncComponent(() => import('../components/AddToCollection.vue')),
     AnonymizedNotice: defineAsyncComponent(() => import('../components/AnonymizedNotice.vue')),
     Assets: defineAsyncComponent(() => import('../components/Assets.vue')),
     Catalogs,

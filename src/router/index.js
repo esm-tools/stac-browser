@@ -58,6 +58,12 @@ function getRoutes(config) {
   });
 
   routes.push({
+    path: "/collections/personal",
+    name: "personal-collections",
+    component: () => import("../views/PersonalCollectionsPage.vue")
+  });
+
+  routes.push({
     path: "/:pathMatch(.*)*",
     name: "browse",
     component: () => import("../views/Browse.vue"),

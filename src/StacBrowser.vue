@@ -15,6 +15,9 @@
               <b-button v-if="canSearch" variant="primary" size="sm" :to="searchBrowserLink" :title="$t('search.title')" :pressed="isSearchPage">
                 <b-icon-search /><span class="button-label">{{ $t('search.title') }}</span>
               </b-button>
+              <b-button v-if="!isServerSelector" variant="primary" size="sm" :to="'/collections/personal'" title="My Collections" :pressed="isPersonalCollectionsPage">
+                <b-icon-bookmark /><span class="button-label">My Collections</span>
+              </b-button>
             </b-button-group>
           </nav>
           <div class="title">
@@ -102,6 +105,7 @@ import CONFIG from './config';
 // Import icons needed for dynamic component usage
 import BIconLock from '~icons/bi/lock';
 import BIconUnlock from '~icons/bi/unlock';
+import BIconBookmark from '~icons/bi/bookmark';
 
 import ErrorAlert from './components/ErrorAlert.vue';
 import StacLink from './components/StacLink.vue';
@@ -139,6 +143,7 @@ export default defineComponent({
   name: 'StacBrowser',
   components: {
     Authentication,
+    BIconBookmark,
     BIconLock,
     BIconUnlock,
     BPopover: defineAsyncComponent(() => import('bootstrap-vue-next').then(m => m.BPopover)),
@@ -185,6 +190,9 @@ export default defineComponent({
     },
     isSearchPage() {
       return this.$route.name === 'search';
+    },
+    isPersonalCollectionsPage() {
+      return this.$route.name === 'personal-collections';
     },
     isServerSelector() {
       return this.$route.name === 'select';

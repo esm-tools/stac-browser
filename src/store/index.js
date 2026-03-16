@@ -64,7 +64,8 @@ function getStore(config, router) {
       downloads: {},
       allowSelectCatalog: !config.catalogUrl,
       globalRequestQueryParameters: config.requestQueryParameters,
-      uiLanguage: config.locale
+      uiLanguage: config.locale,
+      user: { name: 'default' }
     }),
     getters: {
       isRoot: (state, getters) => {
