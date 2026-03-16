@@ -297,7 +297,7 @@ export default {
   computed: {
     ...mapState(['catalogUrl']),
     username() {
-      return this.$store.state.user?.name || null;
+      return this.$store.state.user?.name || 'anonymous';
     },
     baseUrl() {
       if (!this.catalogUrl || !this.username) {
