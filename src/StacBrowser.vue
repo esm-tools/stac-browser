@@ -18,6 +18,9 @@
               <b-button v-if="!isServerSelector" variant="primary" size="sm" :to="'/collections/personal'" title="My Collections" :pressed="isPersonalCollectionsPage">
                 <b-icon-bookmark /><span class="button-label">My Collections</span>
               </b-button>
+              <b-button v-if="!isServerSelector" variant="primary" size="sm" :to="'/compute'" title="Compute Clusters" :pressed="isDaskDashboardPage">
+                <b-icon-cpu /><span class="button-label">Compute</span>
+              </b-button>
             </b-button-group>
           </nav>
           <div class="title">
@@ -106,6 +109,7 @@ import CONFIG from './config';
 import BIconLock from '~icons/bi/lock';
 import BIconUnlock from '~icons/bi/unlock';
 import BIconBookmark from '~icons/bi/bookmark';
+import BIconCpu from '~icons/bi/cpu';
 
 import ErrorAlert from './components/ErrorAlert.vue';
 import StacLink from './components/StacLink.vue';
@@ -144,6 +148,7 @@ export default defineComponent({
   components: {
     Authentication,
     BIconBookmark,
+    BIconCpu,
     BIconLock,
     BIconUnlock,
     BPopover: defineAsyncComponent(() => import('bootstrap-vue-next').then(m => m.BPopover)),
@@ -193,6 +198,9 @@ export default defineComponent({
     },
     isPersonalCollectionsPage() {
       return this.$route.name === 'personal-collections';
+    },
+    isDaskDashboardPage() {
+      return this.$route.name === 'dask-dashboard';
     },
     isServerSelector() {
       return this.$route.name === 'select';

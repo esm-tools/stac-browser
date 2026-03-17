@@ -64,6 +64,12 @@ function getRoutes(config) {
   });
 
   routes.push({
+    path: "/compute",
+    name: "dask-dashboard",
+    component: () => import("../views/DaskDashboardPage.vue")
+  });
+
+  routes.push({
     path: "/:pathMatch(.*)*",
     name: "browse",
     component: () => import("../views/Browse.vue"),
