@@ -5,6 +5,10 @@
       <span class="field-count">({{ totalFieldCount }} fields)</span>
     </component>
 
+    <datalist :id="datalistId">
+      <option v-for="label in searchSuggestions" :key="label" :value="label" />
+    </datalist>
+
     <div class="metadata-controls mb-3">
       <div class="search-container">
         <b-form-input
@@ -12,6 +16,7 @@
           type="search"
           :placeholder="$t('metadata.search') || 'Search metadata...'"
           class="metadata-search"
+          :list="datalistId"
           @input="onSearchInput"
         />
       </div>
@@ -106,6 +111,25 @@ export default {
   },
   computed: {
     ...mapState(["uiLanguage"]),
+    datalistId() {
+      // Unique ID so multiple MetadataGroups on the same page (asset + item) don't conflict.
+      return `metadata-search-suggestions-${this.$.uid}`;
+    },
+    searchSuggestions() {
+      // Collect all unique property labels for autocomplete. Labels are human-readable
+      // names like "CO2 Volume Mixing Ratio" — far easier to discover than raw keys.
+      const seen = new Set();
+      const labels = [];
+      for (const group of this.formattedData) {
+        for (const entry of Object.values(group.properties || {})) {
+          if (entry.label && !seen.has(entry.label)) {
+            seen.add(entry.label);
+            labels.push(entry.label);
+          }
+        }
+      }
+      return labels.sort((a, b) => a.localeCompare(b));
+    },
     titleText() {
       if (typeof this.title === "string") {
         return this.title;
