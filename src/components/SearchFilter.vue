@@ -157,23 +157,29 @@
           <!-- Experiment Type -->
           <div class="quick-filter-row mb-2">
             <label class="small fw-bold">Experiment Type</label>
-            <b-form-select
-              v-model="experimentType"
-              :options="experimentTypeOptions"
-              size="sm"
-              style="max-width: 200px"
-            />
+            <div class="d-flex flex-wrap gap-1">
+              <b-form-checkbox-group
+                v-model="selectedExperimentTypes"
+                :options="experimentTypeOptions"
+                buttons
+                button-variant="outline-secondary"
+                size="sm"
+              />
+            </div>
           </div>
 
           <!-- Output Frequency -->
           <div class="quick-filter-row mb-2">
             <label class="small fw-bold">Output Frequency</label>
-            <b-form-select
-              v-model="outputFrequency"
-              :options="frequencyOptions"
-              size="sm"
-              style="max-width: 200px"
-            />
+            <div class="d-flex flex-wrap gap-1">
+              <b-form-checkbox-group
+                v-model="selectedFrequencies"
+                :options="frequencyOptions"
+                buttons
+                button-variant="outline-success"
+                size="sm"
+              />
+            </div>
           </div>
         </b-form-group>
 
@@ -375,8 +381,8 @@ function getDefaults() {
     ch4Max: null,
     n2oMin: null,
     n2oMax: null,
-    experimentType: null,
-    outputFrequency: null,
+    selectedExperimentTypes: [],
+    selectedFrequencies: [],
     selectedPaleoPreset: null
   };
 }
@@ -441,8 +447,8 @@ export default defineComponent({
       ch4Max: null,
       n2oMin: null,
       n2oMax: null,
-      experimentType: null,
-      outputFrequency: null,
+      selectedExperimentTypes: [],
+      selectedFrequencies: [],
       paleoPresets: [
         { id: 'lgm', name: 'LGM', display: '21.0 ka', years_bp: 21000, description: 'Last Glacial Maximum' },
         { id: 'mid_holocene', name: 'Mid-Holocene', display: '6.0 ka', years_bp: 6000, description: 'Mid-Holocene warm period' },
@@ -575,8 +581,10 @@ export default defineComponent({
               queryables: []
             };
           }
-          // Add shortId for cleaner display in dropdown
-          const qWithShortId = Object.assign({}, q, { shortId });
+          // Add shortId for cleaner display in dropdown.
+          // Use Object.create(proto) to preserve the Queryable prototype chain so that
+          // methods like getOperators() remain callable when the chip is clicked.
+          const qWithShortId = Object.assign(Object.create(Object.getPrototypeOf(q)), q, { shortId });
           groups[groupName].queryables.push(qWithShortId);
         }
       });
@@ -623,10 +631,9 @@ export default defineComponent({
     // Experiment type options
     experimentTypeOptions() {
       return [
-        { value: null, text: 'Any Type' },
-        { value: 'control', text: 'Control / PI-Control' },
+        { value: 'control', text: 'Control' },
         { value: 'historical', text: 'Historical' },
-        { value: 'scenario', text: 'Scenario (RCP/SSP)' },
+        { value: 'scenario', text: 'Scenario' },
         { value: 'paleo', text: 'Paleo' },
         { value: 'sensitivity', text: 'Sensitivity' },
         { value: 'spinup', text: 'Spin-up' }
@@ -635,7 +642,6 @@ export default defineComponent({
     // Output frequency options
     frequencyOptions() {
       return [
-        { value: null, text: 'Any Frequency' },
         { value: 'mon', text: 'Monthly' },
         { value: 'day', text: 'Daily' },
         { value: '6hr', text: '6-hourly' },
@@ -1131,12 +1137,21 @@ export default defineComponent({
         }
       }
 
-      // Experiment type filter (pattern match on collection ID or explicit field)
-      if (this.experimentType) {
+      // Output frequency filter
+      if (this.selectedFrequencies.length > 0) {
+        quickFilters.push({
+          field: 'output_frequency',
+          op: 'in',
+          values: this.selectedFrequencies
+        });
+      }
+
+      // Experiment type filter
+      if (this.selectedExperimentTypes.length > 0) {
         quickFilters.push({
           field: 'experiment_type',
-          op: 'like',
-          value: `%${this.experimentType}%`
+          op: 'in',
+          values: this.selectedExperimentTypes
         });
       }
 
