@@ -938,7 +938,7 @@ export default defineComponent({
           const quickCql = new CqlAnd(quickCqlArgs);
           if (filters) {
             // Combine manual filters with quick filters using AND
-            filters = new Cql(new CqlAnd([filters.filter, quickCql]));
+            filters = new Cql(new CqlAnd([filters.filters, quickCql]));
           } else {
             filters = new Cql(quickCql);
           }
