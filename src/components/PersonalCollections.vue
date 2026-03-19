@@ -16,6 +16,16 @@
         </div>
       </BCardTitle>
 
+      <BAlert
+        v-if="notification"
+        :variant="notification.variant"
+        dismissible
+        class="mb-2 py-1 px-2 small"
+        @dismissed="notification = null"
+      >
+        {{ notification.message }}
+      </BAlert>
+
       <div v-if="loading" class="text-center py-4">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
@@ -54,6 +64,9 @@
       ok-title="Create"
       :ok-disabled="!collectionForm.name.trim()"
     >
+      <BAlert v-if="collectionModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="collectionModalError = null">
+        {{ collectionModalError }}
+      </BAlert>
       <BFormGroup label="Name" label-for="coll-name">
         <BFormInput id="coll-name" v-model="collectionForm.name" placeholder="Collection name" required />
       </BFormGroup>
@@ -81,6 +94,9 @@
       ok-title="Create"
       :ok-disabled="!folderForm.name.trim()"
     >
+      <BAlert v-if="folderModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="folderModalError = null">
+        {{ folderModalError }}
+      </BAlert>
       <BFormGroup label="Name" label-for="folder-name">
         <BFormInput id="folder-name" v-model="folderForm.name" placeholder="Folder name" required />
       </BFormGroup>
@@ -98,6 +114,9 @@
       ok-title="Save"
       :ok-disabled="!editForm.name.trim()"
     >
+      <BAlert v-if="editModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="editModalError = null">
+        {{ editModalError }}
+      </BAlert>
       <BFormGroup label="Name" label-for="edit-name">
         <BFormInput id="edit-name" v-model="editForm.name" required />
       </BFormGroup>
@@ -132,6 +151,9 @@
       ok-title="Share"
       :ok-disabled="!shareForm.username.trim()"
     >
+      <BAlert v-if="shareModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="shareModalError = null">
+        {{ shareModalError }}
+      </BAlert>
       <BFormGroup label="Username" label-for="share-user">
         <BFormInput id="share-user" v-model="shareForm.username" placeholder="Username to share with" />
       </BFormGroup>
@@ -159,6 +181,9 @@
       ok-title="Add"
       :ok-disabled="addItemsFormIds.length === 0"
     >
+      <BAlert v-if="addItemsModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="addItemsModalError = null">
+        {{ addItemsModalError }}
+      </BAlert>
       <p class="small text-muted">
         Enter STAC item IDs (one per line) to add to <strong>{{ addItemsTarget?.name }}</strong>.
       </p>
@@ -179,6 +204,9 @@
       ok-only
       ok-title="Close"
     >
+      <BAlert v-if="labelsModalError" variant="danger" dismissible class="py-1 px-2 small mb-2" @dismissed="labelsModalError = null">
+        {{ labelsModalError }}
+      </BAlert>
       <div v-for="label in labels" :key="label.id" class="d-flex align-items-center mb-2">
         <BBadge
           :style="{ backgroundColor: label.color, color: contrastColor(label.color) }"
@@ -205,6 +233,7 @@
 <script>
 import { mapState } from 'vuex';
 import {
+  BAlert,
   BBadge,
   BButton,
   BCard,
@@ -226,6 +255,7 @@ const mdRenderer = new HtmlRenderer({ safe: true });
 export default {
   name: 'PersonalCollections',
   components: {
+    BAlert,
     BBadge,
     BButton,
     BCard,
@@ -245,6 +275,17 @@ export default {
       error: null,
       tree: [],
       labels: [],
+
+      // Notification banner (auto-dismisses after 4 s)
+      notification: null,
+
+      // Per-modal inline error messages
+      collectionModalError: null,
+      folderModalError: null,
+      editModalError: null,
+      shareModalError: null,
+      addItemsModalError: null,
+      labelsModalError: null,
 
       // Modal visibility
       showNewCollectionModal: false,
@@ -336,6 +377,14 @@ export default {
     }
   },
   methods: {
+    // -- Notifications --
+
+    notify(message, variant = 'success') {
+      this.notification = { message, variant };
+      clearTimeout(this._notifyTimer);
+      this._notifyTimer = setTimeout(() => { this.notification = null; }, 4000);
+    },
+
     // -- API helpers --
 
     async apiRequest(path, options = {}) {
@@ -350,7 +399,12 @@ export default {
       const response = await fetch(url, fetchOpts);
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        throw new Error(`API error ${response.status}: ${text}`);
+        let detail = text;
+        try {
+          const json = JSON.parse(text);
+          detail = json.detail || text;
+        } catch (_) { /* keep raw text */ }
+        throw new Error(detail || `HTTP ${response.status}`);
       }
       if (response.status === 204) {
         return null;
@@ -385,7 +439,8 @@ export default {
 
     // -- Collection CRUD --
 
-    async createCollection() {
+    async createCollection(bvEvent) {
+      this.collectionModalError = null;
       try {
         await this.apiRequest('/collections', {
           method: 'POST',
@@ -397,14 +452,16 @@ export default {
           })
         });
         await this.fetchTree();
+        this.notify(`Collection "${this.collectionForm.name}" created.`);
       } catch (err) {
-        console.error('Failed to create collection:', err);
+        bvEvent?.preventDefault();
+        this.collectionModalError = err.message;
       }
     },
 
-    async createFolder() {
+    async createFolder(bvEvent) {
+      this.folderModalError = null;
       try {
-        // Folders are created through the tree reorder endpoint
         await this.apiRequest('/tree', {
           method: 'PATCH',
           body: JSON.stringify({
@@ -414,12 +471,15 @@ export default {
           })
         });
         await this.fetchTree();
+        this.notify(`Folder "${this.folderForm.name}" created.`);
       } catch (err) {
-        console.error('Failed to create folder:', err);
+        bvEvent?.preventDefault();
+        this.folderModalError = err.message;
       }
     },
 
-    async saveEdit() {
+    async saveEdit(bvEvent) {
+      this.editModalError = null;
       try {
         if (this.editForm.type === 'folder') {
           await this.apiRequest('/tree', {
@@ -441,8 +501,10 @@ export default {
           });
         }
         await this.fetchTree();
+        this.notify(`"${this.editForm.name}" saved.`);
       } catch (err) {
-        console.error('Failed to save edit:', err);
+        bvEvent?.preventDefault();
+        this.editModalError = err.message;
       }
     },
 
@@ -450,6 +512,7 @@ export default {
       if (!this.deleteTarget) {
         return;
       }
+      const name = this.deleteTarget.name;
       try {
         if (this.deleteTarget.type === 'folder') {
           await this.apiRequest('/tree', {
@@ -465,17 +528,19 @@ export default {
           });
         }
         await this.fetchTree();
+        this.notify(`"${name}" deleted.`, 'warning');
       } catch (err) {
-        console.error('Failed to delete node:', err);
+        this.notify(`Delete failed: ${err.message}`, 'danger');
       }
     },
 
     // -- Share --
 
-    async shareCollection() {
+    async shareCollection(bvEvent) {
       if (!this.shareTarget) {
         return;
       }
+      this.shareModalError = null;
       try {
         const collId = this.shareTarget.collection_id || this.shareTarget.id;
         await this.apiRequest(`/collections/${encodeURIComponent(collId)}/shares`, {
@@ -486,8 +551,10 @@ export default {
           })
         });
         await this.fetchTree();
+        this.notify(`Shared with "${this.shareForm.username}".`);
       } catch (err) {
-        console.error('Failed to share collection:', err);
+        bvEvent?.preventDefault();
+        this.shareModalError = err.message;
       }
     },
 
@@ -505,17 +572,20 @@ export default {
           })
         });
         await this.fetchTree();
+        this.notify(`Access revoked for "${username}".`, 'warning');
       } catch (err) {
-        console.error('Failed to revoke share:', err);
+        this.shareModalError = err.message;
       }
     },
 
     // -- Add items --
 
-    async addItems() {
+    async addItems(bvEvent) {
       if (!this.addItemsTarget || this.addItemsFormIds.length === 0) {
         return;
       }
+      this.addItemsModalError = null;
+      const count = this.addItemsFormIds.length;
       try {
         const collId = this.addItemsTarget.collection_id || this.addItemsTarget.id;
         await this.apiRequest(`/collections/${encodeURIComponent(collId)}/items`, {
@@ -525,39 +595,46 @@ export default {
           })
         });
         await this.fetchTree();
+        this.notify(`${count} item${count !== 1 ? 's' : ''} added to "${this.addItemsTarget.name}".`);
       } catch (err) {
-        console.error('Failed to add items:', err);
+        bvEvent?.preventDefault();
+        this.addItemsModalError = err.message;
       }
     },
 
     // -- Labels --
 
     async createLabel() {
+      this.labelsModalError = null;
+      const name = this.newLabel.name;
       try {
         await this.apiRequest('/labels', {
           method: 'POST',
           body: JSON.stringify({
-            name: this.newLabel.name,
+            name,
             color: this.newLabel.color
           })
         });
         this.newLabel.name = '';
         this.newLabel.color = '#0d6efd';
         await this.fetchLabels();
+        this.notify(`Label "${name}" created.`);
       } catch (err) {
-        console.error('Failed to create label:', err);
+        this.labelsModalError = err.message;
       }
     },
 
     async deleteLabel(labelId) {
+      this.labelsModalError = null;
       try {
         await this.apiRequest(`/labels/${encodeURIComponent(labelId)}`, {
           method: 'DELETE'
         });
         await this.fetchLabels();
         await this.fetchTree();
+        this.notify('Label deleted.', 'warning');
       } catch (err) {
-        console.error('Failed to delete label:', err);
+        this.labelsModalError = err.message;
       }
     },
 
@@ -575,13 +652,14 @@ export default {
         });
         await this.fetchTree();
       } catch (err) {
-        console.error('Failed to move node:', err);
+        this.notify(`Move failed: ${err.message}`, 'danger');
       }
     },
 
     // -- Modal openers --
 
     openEditModal(node) {
+      this.editModalError = null;
       this.editForm = {
         id: node.id,
         type: node.type,
@@ -598,6 +676,7 @@ export default {
     },
 
     openShareModal(node) {
+      this.shareModalError = null;
       this.shareTarget = node;
       this.shareForm.username = '';
       this.shareForm.role = 'viewer';
@@ -605,6 +684,7 @@ export default {
     },
 
     openAddItemsModal(node) {
+      this.addItemsModalError = null;
       this.addItemsTarget = node;
       this.addItemsRawInput = '';
       this.showAddItemsModal = true;
@@ -613,6 +693,7 @@ export default {
     // -- Form resets --
 
     resetCollectionForm() {
+      this.collectionModalError = null;
       this.collectionForm = {
         name: '',
         description: '',
@@ -622,19 +703,23 @@ export default {
     },
 
     resetFolderForm() {
+      this.folderModalError = null;
       this.folderForm = { name: '', parent_id: null };
     },
 
     resetEditForm() {
+      this.editModalError = null;
       this.editForm = { id: null, type: null, name: '', description: '', label_ids: [] };
     },
 
     resetShareForm() {
+      this.shareModalError = null;
       this.shareTarget = null;
       this.shareForm = { username: '', role: 'viewer' };
     },
 
     resetAddItemsForm() {
+      this.addItemsModalError = null;
       this.addItemsTarget = null;
       this.addItemsRawInput = '';
     },
