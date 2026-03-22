@@ -419,7 +419,7 @@ export default {
       this.error = null;
       try {
         const data = await this.apiRequest('/tree');
-        this.tree = data?.nodes || [];
+        this.tree = data?.roots || [];
       } catch (err) {
         this.error = err.message;
         this.tree = [];

@@ -128,7 +128,7 @@ export default {
         }
         const data = await response.json();
         this.flatCollections = [];
-        this.flattenTree(data?.nodes || [], '');
+        this.flattenTree(data?.roots || [], '');
       } catch (err) {
         this.collectionsError = err.message;
         this.flatCollections = [];
