@@ -82,6 +82,7 @@
         @share-node="$emit('share-node', $event)"
         @add-items="$emit('add-items', $event)"
         @move-node="$emit('move-node', $event)"
+        @view-node="$emit('view-node', $event)"
       />
     </div>
   </div>
@@ -106,7 +107,7 @@ export default {
       default: () => []
     }
   },
-  emits: ['edit-node', 'delete-node', 'share-node', 'add-items', 'move-node'],
+  emits: ['edit-node', 'delete-node', 'share-node', 'add-items', 'move-node', 'view-node'],
   data() {
     return {
       expanded: false,
@@ -128,6 +129,8 @@ export default {
     toggle() {
       if (this.isFolder) {
         this.expanded = !this.expanded;
+      } else {
+        this.$emit('view-node', this.node);
       }
     },
     onDragStart(event) {

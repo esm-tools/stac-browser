@@ -51,8 +51,12 @@
           @share-node="openShareModal"
           @add-items="openAddItemsModal"
           @move-node="moveNode"
+          @view-node="openViewModal"
         />
       </div>
+      <p class="text-muted small mt-2 mb-0" style="font-style: italic;">
+        Tip: drag collections into folders to organise them.
+      </p>
     </BCardBody>
 
     <!-- Create Collection Modal -->
@@ -197,6 +201,32 @@
       </BFormGroup>
     </BModal>
 
+    <!-- View Collection Items Modal -->
+    <BModal
+      v-model="showViewModal"
+      :title="viewTarget ? viewTarget.name : 'Collection'"
+      ok-only
+      ok-title="Close"
+      size="lg"
+    >
+      <div v-if="viewLoading" class="text-center py-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Loading…</span>
+        </div>
+      </div>
+      <div v-else-if="viewError" class="text-danger small">{{ viewError }}</div>
+      <div v-else-if="viewItems.length === 0" class="text-muted small">
+        This collection has no items yet. Use the + button to add items.
+      </div>
+      <ul v-else class="list-unstyled mb-0">
+        <li
+          v-for="itemId in viewItems"
+          :key="itemId"
+          class="py-1 border-bottom font-monospace small"
+        >{{ itemId }}</li>
+      </ul>
+    </BModal>
+
     <!-- Labels Management Modal -->
     <BModal
       v-model="showLabelsModal"
@@ -295,6 +325,13 @@ export default {
       showShareModal: false,
       showAddItemsModal: false,
       showLabelsModal: false,
+      showViewModal: false,
+
+      // View collection items
+      viewTarget: null,
+      viewItems: [],
+      viewLoading: false,
+      viewError: null,
 
       // Form state
       collectionForm: {
@@ -688,6 +725,23 @@ export default {
       this.addItemsTarget = node;
       this.addItemsRawInput = '';
       this.showAddItemsModal = true;
+    },
+
+    async openViewModal(node) {
+      this.viewTarget = node;
+      this.viewItems = [];
+      this.viewError = null;
+      this.viewLoading = true;
+      this.showViewModal = true;
+      try {
+        const collId = node.collection_id || node.id;
+        const data = await this.apiRequest(`/collections/${encodeURIComponent(collId)}`);
+        this.viewItems = Array.isArray(data?.item_ids) ? data.item_ids : [];
+      } catch (err) {
+        this.viewError = err.message;
+      } finally {
+        this.viewLoading = false;
+      }
     },
 
     // -- Form resets --
