@@ -174,6 +174,12 @@
           </BButton>
         </div>
       </div>
+      <div class="mt-3 p-2 rounded small text-muted" style="background: var(--bs-light, #f8f9fa); border: 1px solid var(--bs-border-color, #dee2e6);">
+        <strong>How sharing works:</strong> access is granted immediately — no email or notification
+        is sent to the recipient. They can fetch the shared collection directly via the API:
+        <code class="d-block mt-1 user-select-all text-break">{{ shareCollectionApiUrl }}</code>
+        <span class="d-block mt-1">A "Shared with me" browser view is planned for a future release.</span>
+      </div>
     </BModal>
 
     <!-- Add Items Modal -->
@@ -218,13 +224,24 @@
       <div v-else-if="viewItems.length === 0" class="text-muted small">
         This collection has no items yet. Use the + button to add items.
       </div>
-      <ul v-else class="list-unstyled mb-0">
-        <li
-          v-for="itemId in viewItems"
-          :key="itemId"
-          class="py-1 border-bottom font-monospace small"
-        >{{ itemId }}</li>
-      </ul>
+      <div v-else>
+        <p class="text-muted small mb-2">
+          Click an item to open it in the catalog browser.
+        </p>
+        <ul class="list-unstyled mb-0">
+          <li
+            v-for="itemId in viewItems"
+            :key="itemId"
+            class="py-1 border-bottom"
+          >
+            <router-link
+              :to="'/collections/' + encodeURIComponent(itemId)"
+              class="font-monospace small"
+              @click="showViewModal = false"
+            >{{ itemId }}</router-link>
+          </li>
+        </ul>
+      </div>
     </BModal>
 
     <!-- Labels Management Modal -->
@@ -400,6 +417,14 @@ export default {
         .split('\n')
         .map(s => s.trim())
         .filter(s => s.length > 0);
+    },
+    shareCollectionApiUrl() {
+      if (!this.shareTarget || !this.catalogUrl) {
+        return '';
+      }
+      const collId = this.shareTarget.collection_id || this.shareTarget.id;
+      const base = this.catalogUrl.replace(/\/+$/, '');
+      return `${base}/users/${encodeURIComponent(this.username)}/collections/${collId}`;
     }
   },
   watch: {
