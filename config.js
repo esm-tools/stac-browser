@@ -1,9 +1,10 @@
 export default {
-    catalogUrl: 'http://albedo1:23100',
+    catalogUrl: 'http://localhost:23006',
     catalogTitle: "STAC Browser",
     catalogImage: null,
     allowExternalAccess: true, // Must be true if catalogUrl is not given
     allowedDomains: [],
+    allowedHosts: true,
     detectLocaleFromBrowser: true,
     storeLocale: true,
     locale: "en",
