@@ -6,14 +6,22 @@
     <b-card-body>
       <b-card-title class="d-flex justify-content-between align-items-start">
         <StacLink :data="[data, catalog]" class="stretched-link" />
-        <!-- Model component badges -->
-        <div v-if="modelComponents.length > 0" class="component-badges ms-2 flex-shrink-0">
+        <!-- Right-side header: model badges + Compare badge + Add to Collection star -->
+        <div class="card-header-actions ms-2 flex-shrink-0">
           <b-badge
             v-for="comp in modelComponents"
             :key="comp"
             :variant="componentVariant(comp)"
             class="ms-1"
           >{{ comp }}</b-badge>
+          <b-button
+            v-if="canCompare"
+            size="sm"
+            :variant="isSelectedForComparison ? 'secondary' : 'outline-secondary'"
+            class="compare-badge ms-1"
+            @click.stop="toggleComparison"
+          >Compare</b-button>
+          <AddToCollection v-if="collectionId" :item-id="collectionId" :compact="true" class="ms-1" />
         </div>
       </b-card-title>
       <b-card-text v-if="fileFormats.length > 0 || hasDescription || isDeprecated" class="intro">
@@ -41,15 +49,6 @@
         <b-button size="sm" variant="outline-secondary" class="cite-btn" @click.stop="copyCitation">
           Cite
         </b-button>
-      </div>
-      <!-- Compare checkbox -->
-      <div v-if="canCompare" class="compare-checkbox-wrapper">
-        <b-form-checkbox
-          :model-value="isSelectedForComparison"
-          @update:model-value="toggleComparison"
-          @click.stop
-          size="sm"
-        >Compare</b-form-checkbox>
       </div>
       <Keywords v-if="showKeywordsInCatalogCards && keywords.length > 0" :keywords="keywords" variant="primary" />
       <b-card-text v-if="temporalExtent" class="datetime"><small v-html="temporalExtent" /></b-card-text>
@@ -83,7 +82,8 @@ export default {
     BCardTitle,
     StacLink,
     GlossaryTooltip,
-    Keywords: defineAsyncComponent(() => import('./Keywords.vue'))
+    Keywords: defineAsyncComponent(() => import('./Keywords.vue')),
+    AddToCollection: defineAsyncComponent(() => import('./AddToCollection.vue'))
   },
   mixins: [
     FileFormatsMixin,
@@ -276,7 +276,7 @@ export default {
       const doi = this.doi ? ` DOI: ${this.doi}` : '';
       return `${title} (${year}).${doi}`;
     },
-    // Collection ID for comparison
+    // Collection ID for comparison and Add to Collection
     collectionId() {
       return this.data?.id || null;
     },
@@ -355,11 +355,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.component-badges {
-  z-index: 1;
-  position: relative;
-}
-
 .quick-facts {
   display: flex;
   flex-wrap: wrap;
@@ -371,7 +366,7 @@ export default {
   }
 }
 
-// Ensure the stretched-link doesn't interfere with badges
+// Ensure the stretched-link doesn't interfere with the right-side actions
 .catalog-card .card-title {
   position: relative;
 
@@ -395,10 +390,23 @@ export default {
   }
 }
 
-// Compare checkbox
-.compare-checkbox-wrapper {
+// Right-side header actions: model badges + Compare badge + star
+.card-header-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.25rem;
   z-index: 1;
   position: relative;
-  margin-top: 0.5rem;
+}
+
+// Compare styled as a badge-like toggle button
+.compare-badge {
+  font-size: 0.75em;
+  padding: 0.25em 0.5em;
+  line-height: 1;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 </style>

@@ -6,8 +6,8 @@
       @click="showModal = true"
       title="Add to personal collection"
     >
-      <span class="me-1">&#9733;</span>
-      <span class="button-label">Add to Collection</span>
+      <span :class="compact ? '' : 'me-1'">&#9733;</span>
+      <span v-if="!compact" class="button-label">Add to Collection</span>
     </BButton>
 
     <BModal
@@ -70,6 +70,10 @@ export default {
     itemId: {
       type: String,
       required: true
+    },
+    compact: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
