@@ -276,9 +276,9 @@ export default {
       const doi = this.doi ? ` DOI: ${this.doi}` : '';
       return `${title} (${year}).${doi}`;
     },
-    // Collection ID for comparison and Add to Collection
+    // Browser path for Add to Collection (e.g. /experiments/basic-001)
     collectionId() {
-      return this.data?.id || null;
+      return this.data?.getBrowserPath?.() || null;
     },
     // Can this collection be compared?
     canCompare() {

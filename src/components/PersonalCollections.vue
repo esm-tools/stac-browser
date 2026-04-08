@@ -235,10 +235,10 @@
             class="py-1 border-bottom"
           >
             <router-link
-              :to="'/collections/' + encodeURIComponent(itemId)"
+              :to="itemId.startsWith('/') ? itemId : '/collections/' + encodeURIComponent(itemId)"
               class="font-monospace small"
               @click="showViewModal = false"
-            >{{ itemId }}</router-link>
+            >{{ itemId.startsWith('/') ? itemId.split('/').pop() : itemId }}</router-link>
           </li>
         </ul>
       </div>

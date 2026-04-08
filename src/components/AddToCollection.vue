@@ -42,7 +42,7 @@
           />
         </BFormGroup>
         <div class="mt-3 small text-muted">
-          Adding item: <strong>{{ itemId }}</strong>
+          Adding item: <strong>{{ itemId.startsWith('/') ? itemId.split('/').pop() : itemId }}</strong>
         </div>
       </template>
     </BModal>

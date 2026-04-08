@@ -5,7 +5,7 @@
         <section class="intro">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <h2>{{ $t('description') }}</h2>
-            <AddToCollection v-if="isCollection && data.id" :item-id="data.id" />
+            <AddToCollection v-if="isCollection && data.id" :item-id="data.getBrowserPath()" />
           </div>
           <DeprecationNotice v-if="showDeprecation" :data="data" />
           <AnonymizedNotice v-if="data['anon:warning']" :warning="data['anon:warning']" />
