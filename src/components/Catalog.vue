@@ -6,14 +6,8 @@
     <b-card-body>
       <b-card-title class="d-flex justify-content-between align-items-start">
         <StacLink :data="[data, catalog]" class="stretched-link" />
-        <!-- Right-side header: model badges + Compare badge + Add to Collection star -->
+        <!-- Right-side header: Compare badge + Add to Collection star -->
         <div class="card-header-actions ms-2 flex-shrink-0">
-          <b-badge
-            v-for="comp in modelComponents"
-            :key="comp"
-            :variant="componentVariant(comp)"
-            class="ms-1"
-          >{{ comp }}</b-badge>
           <b-button
             v-if="canCompare"
             size="sm"
@@ -24,6 +18,15 @@
           <AddToCollection v-if="collectionId" :item-id="collectionId" :compact="true" class="ms-1" />
         </div>
       </b-card-title>
+      <!-- Model component badges on their own row below the title -->
+      <div v-if="modelComponents.length > 0" class="model-badges mb-1">
+        <b-badge
+          v-for="comp in modelComponents"
+          :key="comp"
+          :variant="componentVariant(comp)"
+          class="me-1"
+        >{{ comp }}</b-badge>
+      </div>
       <b-card-text v-if="fileFormats.length > 0 || hasDescription || isDeprecated" class="intro">
         <b-badge v-if="isDeprecated" variant="warning" class="me-1 mt-1 deprecated">{{ $t('deprecated') }}</b-badge>
         <b-badge v-for="format in fileFormats" :key="format" variant="secondary" class="me-1 mt-1 fileformat">{{ format }}</b-badge>
@@ -398,7 +401,14 @@ export default {
   }
 }
 
-// Right-side header actions: model badges + Compare badge + star
+// Component badges row below the card title
+.model-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+// Right-side header actions: Compare badge + star
 .card-header-actions {
   display: flex;
   align-items: flex-start;

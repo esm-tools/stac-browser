@@ -29,7 +29,7 @@ export default {
         "id",
         "pl"
     ],
-    apiCatalogPriority: null,
+    apiCatalogPriority: 'collections',
     useTileLayerAsFallback: false,
     displayGeoTiffByDefault: false,
     displayPreview: true,
