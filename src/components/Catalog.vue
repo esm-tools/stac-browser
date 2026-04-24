@@ -124,17 +124,25 @@ export default {
       }
       return null;
     },
-    // Extract model components from collection metadata
+    // Extract model components from collection metadata.
+    // Option A layout: collapsed collection has a "components" list field
+    // (e.g. ["echam","fesom","jsbach","oasis3mct"]).
+    // Legacy layout: single "model" string field per per-component collection.
     modelComponents() {
       if (!this.data?.isCollection()) {
         return [];
       }
-      // Check direct 'model' field first
+      // Option A: "components" list (preferred)
+      const components = this.data.components;
+      if (Array.isArray(components) && components.length > 0) {
+        return components;
+      }
+      // Legacy: single "model" string
       const model = this.data.model || this.data.properties?.model;
       if (model) {
         return Array.isArray(model) ? model : [model];
       }
-      // Try to extract from collection ID (e.g., "exp_id__echam__output")
+      // Fallback: parse known component names from the collection ID
       const id = this.data.id || '';
       const knownComponents = ['echam', 'fesom', 'jsbach', 'hdmodel', 'oasis', 'recom', 'pism'];
       const found = knownComponents.filter(comp =>

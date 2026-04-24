@@ -311,7 +311,7 @@
     "selectForItemSearch": "Select for Item Search",
     "spatialExtent": "Spatial Extent",
     "tabs": {
-      "collections": "Search for Collections",
+      "collections": "Search for Experiments",
       "items": "Search for Items"
     },
     "temporalExtent": "Temporal Extent",
