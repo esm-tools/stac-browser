@@ -1064,7 +1064,7 @@ export default defineComponent({
       // Model component filter (IN clause)
       if (this.selectedComponents.length > 0) {
         quickFilters.push({
-          field: 'model',
+          field: 'component',
           op: 'in',
           values: this.selectedComponents
         });
