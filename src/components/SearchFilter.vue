@@ -1073,7 +1073,7 @@ export default defineComponent({
       // CO2 range filter (converted from ppm to decimal)
       if (this.co2Min !== null || this.co2Max !== null) {
         // Look for CO2 VMR queryable
-        const co2Field = 'nml:radctl:co2vmr';
+        const co2Field = 'nml:echam:radctl:co2vmr';
         if (this.co2Min !== null) {
           // Convert ppm to decimal (volume mixing ratio)
           const minDecimal = this.co2Min * 1e-6;
@@ -1095,7 +1095,7 @@ export default defineComponent({
 
       // CH4 range filter (converted from ppb to decimal)
       if (this.ch4Min !== null || this.ch4Max !== null) {
-        const ch4Field = 'nml:radctl:ch4vmr';
+        const ch4Field = 'nml:echam:radctl:ch4vmr';
         if (this.ch4Min !== null) {
           // Convert ppb to decimal (volume mixing ratio)
           const minDecimal = this.ch4Min * 1e-9;
@@ -1117,7 +1117,7 @@ export default defineComponent({
 
       // N2O range filter (converted from ppb to decimal)
       if (this.n2oMin !== null || this.n2oMax !== null) {
-        const n2oField = 'nml:radctl:n2ovmr';
+        const n2oField = 'nml:echam:radctl:n2ovmr';
         if (this.n2oMin !== null) {
           // Convert ppb to decimal (volume mixing ratio)
           const minDecimal = this.n2oMin * 1e-9;
