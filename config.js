@@ -1,6 +1,6 @@
 export default {
-    catalogUrl: 'http://localhost:23006',
-    catalogTitle: "STAC Browser",
+    catalogUrl: 'http://10.7.0.13:23006',
+    catalogTitle: "ESM-Tools STAC Catalog",
     catalogImage: null,
     allowExternalAccess: true, // Must be true if catalogUrl is not given
     allowedDomains: [],
@@ -56,5 +56,5 @@ export default {
     authConfig: null,
     crs: {},
     footerLinks: null,
-    vizServer: 'http://albedo1:23101' // URL of visualization server for data previews (e.g., 'http://localhost:8001')
+    vizServer: null // URL of visualization server for data previews (e.g., 'http://localhost:8001')
 };
