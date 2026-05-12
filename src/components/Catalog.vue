@@ -291,13 +291,17 @@ export default {
     collectionId() {
       return this.data?.getBrowserPath?.() || null;
     },
+    // STAC ID used for comparison (plain ID like "basic-002", not a browser path)
+    stacId() {
+      return this.data?.isCollection() ? (this.data.id || null) : null;
+    },
     // Can this collection be compared?
     canCompare() {
-      return this.data?.isCollection() && this.collectionId;
+      return !!this.stacId;
     },
     // Is this collection selected for comparison?
     isSelectedForComparison() {
-      return this.$store.getters['comparison/isSelected'](this.collectionId);
+      return this.$store.getters['comparison/isSelected'](this.stacId);
     }
   },
   methods: {
@@ -357,8 +361,8 @@ export default {
     },
     // Toggle comparison selection
     toggleComparison() {
-      if (this.collectionId) {
-        this.$store.dispatch('comparison/toggleCollection', this.collectionId);
+      if (this.stacId) {
+        this.$store.dispatch('comparison/toggleCollection', this.stacId);
       }
     }
   }

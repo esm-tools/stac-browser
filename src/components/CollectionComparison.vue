@@ -198,15 +198,20 @@ export default {
         const stacApi = this.catalogUrl || '';
         for (const id of this.selectedCollections) {
           if (!this.collectionData[id]) {
-            // First try the store's database
-            const stacData = this.$store.state.database[id];
-            if (stacData && typeof stacData === 'object') {
-              this.$store.commit('comparison/setCollectionData', {
-                collectionId: id,
-                data: stacData
-              });
+            // Fetch collection metadata from the STAC API (for title, etc.)
+            try {
+              const resp = await fetch(`${stacApi}/collections/${id}`);
+              if (resp.ok) {
+                const collData = await resp.json();
+                this.$store.commit('comparison/setCollectionData', {
+                  collectionId: id,
+                  data: collData
+                });
+              }
+            } catch (e) {
+              console.warn('Failed to fetch collection metadata for', id, e);
             }
-            // Also fetch items to get namelist parameters
+            // Fetch items to get namelist parameters (nml: prefixed item properties)
             await this.fetchItemParameters(id, stacApi);
           }
         }
