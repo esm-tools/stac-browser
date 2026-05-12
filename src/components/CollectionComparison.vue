@@ -55,9 +55,9 @@
             <thead class="table-light">
               <tr>
                 <th class="param-header">Parameter</th>
-                <th v-for="col in collections" :key="col.id" class="collection-header">
-                  <div class="collection-title">{{ col.title || col.id }}</div>
-                  <small class="text-muted">{{ col.id }}</small>
+                <th v-for="(col, idx) in collections" :key="col.id" class="collection-header" :class="`col-${idx}`">
+                  <div class="collection-id">{{ col.id }}</div>
+                  <small class="text-muted collection-title-small">{{ col.title !== col.id ? col.title : '' }}</small>
                 </th>
               </tr>
             </thead>
@@ -297,10 +297,27 @@ export default {
     text-align: center;
     vertical-align: top;
 
-    .collection-title {
-      font-weight: 600;
-      word-break: break-word;
+    .collection-id {
+      font-weight: 700;
+      font-size: 1rem;
+      font-family: monospace;
+      color: #212529;
     }
+
+    .collection-title-small {
+      display: block;
+      font-size: 0.75rem;
+      word-break: break-word;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    // Subtle left border tint per column to help visual tracking
+    &.col-0 { border-top: 3px solid #0d6efd; }
+    &.col-1 { border-top: 3px solid #fd7e14; }
+    &.col-2 { border-top: 3px solid #198754; }
   }
 
   .param-name {
