@@ -221,19 +221,24 @@ export default {
     },
     async fetchItemParameters(collectionId, stacApi) {
       try {
-        const response = await fetch(`${stacApi}/collections/${collectionId}/items?limit=1`);
+        // Fetch enough items to find one that carries nml: namelist properties.
+        // The first item returned (sorted by default) may be a coupler/OASIS file
+        // with no NML keys, so we scan up to 50 and pick the first that has them.
+        const response = await fetch(`${stacApi}/collections/${collectionId}/items?limit=50`);
         if (!response.ok) return;
         const data = await response.json();
-        if (data.features && data.features.length > 0) {
-          const item = data.features[0];
-          const props = item.properties || {};
-          // Merge item properties (which have nml: keys) into collection data
-          const existing = this.collectionData[collectionId] || {};
-          this.$store.commit('comparison/setCollectionData', {
-            collectionId,
-            data: { ...existing, ...props }
-          });
-        }
+        if (!data.features || data.features.length === 0) return;
+        // Find first item with at least one nml: property
+        const nmlItem = data.features.find(f =>
+          Object.keys(f.properties || {}).some(k => k.startsWith('nml:'))
+        ) || data.features[0];
+        const props = nmlItem.properties || {};
+        // Merge item properties into collection data
+        const existing = this.collectionData[collectionId] || {};
+        this.$store.commit('comparison/setCollectionData', {
+          collectionId,
+          data: { ...existing, ...props }
+        });
       } catch (e) {
         console.warn('Failed to fetch item parameters for', collectionId, e);
       }

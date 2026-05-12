@@ -27,13 +27,16 @@ export default function() {
       canAddMore: state => state.selectedCollections.length < MAX_SELECTIONS,
       // Are we ready to compare? (need at least 2)
       canCompare: state => state.selectedCollections.length >= 2,
-      // Get all namelist parameters across selected collections
+      // Get all namelist parameters across selected collections.
+      // Excludes collection-level aggregate keys like nml:parameters and nml:groups
+      // which hold bundled dicts rather than individual comparable values.
       allParameters: state => {
+        const EXCLUDE = new Set(['nml:parameters', 'nml:groups']);
         const params = new Set();
         for (const data of Object.values(state.collectionData)) {
           if (data && typeof data === 'object') {
             for (const key of Object.keys(data)) {
-              if (key.startsWith('nml:')) {
+              if (key.startsWith('nml:') && !EXCLUDE.has(key)) {
                 params.add(key);
               }
             }
