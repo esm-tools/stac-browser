@@ -316,6 +316,17 @@
           />
         </b-form-group>
       </b-card-body>
+      <!-- Live filter preview -->
+      <b-card-body v-if="filterPreviewLines.length > 0" class="filter-preview-body pt-0">
+        <div class="filter-preview">
+          <div class="filter-preview-label">Active filters ({{ filtersAndOr.toUpperCase() }}):</div>
+          <code class="filter-preview-code">
+            <div v-for="(line, i) in filterPreviewLines" :key="i">
+              <span v-if="i > 0" class="filter-preview-operator">{{ filtersAndOr.toUpperCase() }} </span>{{ line }}
+            </div>
+          </code>
+        </div>
+      </b-card-body>
       <b-card-footer>
         <b-button type="submit" variant="primary">{{ $t('submit') }}</b-button>
         <b-button type="reset" variant="danger" class="ms-3">{{ $t('reset') }}</b-button>
@@ -624,10 +635,54 @@ export default defineComponent({
         { text: 'FESOM', value: 'fesom' },
         { text: 'JSBACH', value: 'jsbach' },
         { text: 'HDMODEL', value: 'hdmodel' },
-        { text: 'OASIS', value: 'oasis' },
+        { text: 'OASIS3MCT', value: 'oasis3mct' },
         { text: 'RECOM', value: 'recom' }
       ];
     },
+    // Live preview of active filter conditions (one CQL2-text line per condition)
+    filterPreviewLines() {
+      const parts = [];
+
+      if (this.selectedComponents.length > 0) {
+        parts.push(`component IN (${this.selectedComponents.map(c => `'${c}'`).join(', ')})`);
+      }
+
+      if (this.co2Min !== null) parts.push(`CO2 ≥ ${this.co2Min} ppm`);
+      if (this.co2Max !== null) parts.push(`CO2 ≤ ${this.co2Max} ppm`);
+
+      if (this.ch4Min !== null) parts.push(`CH4 ≥ ${this.ch4Min} ppb`);
+      if (this.ch4Max !== null) parts.push(`CH4 ≤ ${this.ch4Max} ppb`);
+
+      if (this.n2oMin !== null) parts.push(`N2O ≥ ${this.n2oMin} ppb`);
+      if (this.n2oMax !== null) parts.push(`N2O ≤ ${this.n2oMax} ppb`);
+
+      if (this.selectedFrequencies.length > 0) {
+        parts.push(`frequency IN (${this.selectedFrequencies.map(f => `'${f}'`).join(', ')})`);
+      }
+
+      if (this.selectedExperimentTypes.length > 0) {
+        parts.push(`experiment_type IN (${this.selectedExperimentTypes.map(e => `'${e}'`).join(', ')})`);
+      }
+
+      if (this.selectedPaleoPreset) {
+        const preset = this.paleoPresets.find(p => p.id === this.selectedPaleoPreset);
+        if (preset) parts.push(`paleo:years_bp ≈ ${preset.years_bp} (${preset.name})`);
+      }
+
+      for (const f of this.filters) {
+        try {
+          let filter = new f.operator(f.queryable, f.value);
+          let text = filter.toText();
+          if (f.negate) text = `NOT (${text})`;
+          parts.push(text);
+        } catch (e) {
+          // skip filters that can't be serialised yet
+        }
+      }
+
+      return parts;
+    },
+
     // Experiment type options
     experimentTypeOptions() {
       return [
@@ -1182,6 +1237,39 @@ export default defineComponent({
 
 <style lang="scss">
 @import '../theme/datepicker.scss';
+
+// Live filter preview box
+.filter-preview-body {
+  padding-top: 0;
+}
+
+.filter-preview {
+  background: #1e1e1e;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+
+  .filter-preview-label {
+    color: #9cdcfe;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .filter-preview-code {
+    display: block;
+    color: #ce9178;
+    font-family: 'Consolas', 'Monaco', monospace;
+    white-space: pre;
+    line-height: 1.5;
+    background: transparent;
+    padding: 0;
+    border: none;
+
+    .filter-preview-operator {
+      color: #569cd6;
+    }
+  }
+}
 
 // Quick filters section styling
 .quick-filters {
