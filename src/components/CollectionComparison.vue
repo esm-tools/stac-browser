@@ -50,37 +50,17 @@
           />
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered comparison-table">
-            <thead class="table-light">
-              <tr>
-                <th class="param-header">Parameter</th>
-                <th v-for="(col, idx) in collections" :key="col.id" class="collection-header" :class="`col-${idx}`">
-                  <div class="collection-id">{{ col.id }}</div>
-                  <small class="text-muted collection-title-small">{{ col.title !== col.id ? col.title : '' }}</small>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="param in filteredParameters"
-                :key="param"
-                :class="{ 'table-warning': hasDifference(param) }"
-              >
-                <td class="param-name">
-                  <code>{{ formatParamName(param) }}</code>
-                </td>
-                <td v-for="col in collections" :key="col.id" class="param-value">
-                  {{ formatValue(getParamValue(col.id, param)) }}
-                </td>
-              </tr>
-              <tr v-if="filteredParameters.length === 0">
-                <td :colspan="collections.length + 1" class="text-center text-muted py-3">
-                  No matching parameters found.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="ag-theme-alpine comparison-grid">
+          <AgGridVue
+            :columnDefs="columnDefs"
+            :rowData="gridRowData"
+            :rowClassRules="rowClassRules"
+            :defaultColDef="defaultColDef"
+            :headerHeight="40"
+            domLayout="autoHeight"
+            suppressCellFocus
+            @grid-ready="onGridReady"
+          />
         </div>
       </div>
 
@@ -117,11 +97,17 @@
 <script>
 import { mapState, mapGetters, mapActions } from 'vuex';
 import { BModal, BButton, BSpinner, BFormCheckbox, BFormInput } from 'bootstrap-vue-next';
+import { AgGridVue } from 'ag-grid-vue3';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const HEADER_COLORS = ['#0d6efd', '#fd7e14', '#198754', '#6f42c1', '#d63384'];
 
 export default {
   name: 'CollectionComparison',
   components: {
-    BModal, BButton, BSpinner, BFormCheckbox, BFormInput
+    BModal, BButton, BSpinner, BFormCheckbox, BFormInput, AgGridVue
   },
   data() {
     return {
@@ -129,7 +115,8 @@ export default {
       showOnlyDifferences: false,
       parameterFilter: '',
       loading: false,
-      iframeLoading: true
+      iframeLoading: true,
+      gridApi: null,
     };
   },
   computed: {
@@ -137,35 +124,85 @@ export default {
     ...mapGetters('comparison', ['allParameters', 'getParamValue', 'hasDifference']),
     ...mapState(['catalogUrl', 'vizServer']),
     isOpen: {
-      get() {
-        return this.isModalOpen;
-      },
-      set(value) {
-        if (!value) {
-          this.closeComparison();
-        }
-      }
+      get() { return this.isModalOpen; },
+      set(value) { if (!value) this.closeComparison(); }
     },
     collections() {
       return this.selectedCollections.map(id => {
         const data = this.collectionData[id] || {};
-        return {
-          id,
-          title: data.title || data.properties?.title || id,
-          ...data
-        };
+        return { id, title: data.title || data.properties?.title || id, ...data };
       });
     },
     filteredParameters() {
       let params = this.allParameters;
-      if (this.showOnlyDifferences) {
-        params = params.filter(p => this.hasDifference(p));
-      }
+      if (this.showOnlyDifferences) params = params.filter(p => this.hasDifference(p));
       if (this.parameterFilter) {
         const filter = this.parameterFilter.toLowerCase();
         params = params.filter(p => p.toLowerCase().includes(filter));
       }
       return params;
+    },
+    defaultColDef() {
+      return {
+        resizable: true,
+        sortable: true,
+        minWidth: 120,
+      };
+    },
+    columnDefs() {
+      const cols = [
+        {
+          field: 'param',
+          headerName: 'Parameter',
+          pinned: 'left',
+          width: 240,
+          resizable: true,
+          cellStyle: {
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            color: '#495057',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+        },
+      ];
+      this.collections.forEach((col, idx) => {
+        cols.push({
+          field: col.id,
+          headerName: col.id,
+          flex: 1,
+          minWidth: 150,
+          resizable: true,
+          wrapText: true,
+          autoHeight: true,
+          cellStyle: {
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            textAlign: 'center',
+            lineHeight: '1.4',
+            paddingTop: '8px',
+            paddingBottom: '8px',
+            wordBreak: 'break-all',
+          },
+          headerStyle: { borderTop: `3px solid ${HEADER_COLORS[idx % HEADER_COLORS.length]}` },
+        });
+      });
+      return cols;
+    },
+    gridRowData() {
+      return this.filteredParameters.map(param => {
+        const row = { param: this.formatParamName(param), _rawParam: param };
+        this.collections.forEach(col => {
+          row[col.id] = this.formatValue(this.getParamValue(col.id, param));
+        });
+        return row;
+      });
+    },
+    rowClassRules() {
+      return {
+        'row-diff': params => params.data && this.hasDifference(params.data._rawParam),
+      };
     },
     visualCompareUrl() {
       if (this.collections.length < 2 || !this.vizServer) return null;
@@ -179,39 +216,36 @@ export default {
   },
   watch: {
     isModalOpen(isOpen) {
-      if (isOpen) {
-        this.loadCollectionData();
-        this.iframeLoading = true;
-      }
+      if (isOpen) { this.loadCollectionData(); this.iframeLoading = true; }
     },
     activeTab(tab) {
-      if (tab === 'visual') {
-        this.iframeLoading = true;
-      }
-    }
+      if (tab === 'visual') this.iframeLoading = true;
+    },
+    gridRowData() {
+      if (this.gridApi) this.gridApi.sizeColumnsToFit();
+    },
   },
   methods: {
     ...mapActions('comparison', ['closeComparison']),
+    onGridReady(params) {
+      this.gridApi = params.api;
+      params.api.sizeColumnsToFit();
+    },
     async loadCollectionData() {
       this.loading = true;
       try {
         const stacApi = this.catalogUrl || '';
         for (const id of this.selectedCollections) {
           if (!this.collectionData[id]) {
-            // Fetch collection metadata from the STAC API (for title, etc.)
             try {
               const resp = await fetch(`${stacApi}/collections/${id}`);
               if (resp.ok) {
                 const collData = await resp.json();
-                this.$store.commit('comparison/setCollectionData', {
-                  collectionId: id,
-                  data: collData
-                });
+                this.$store.commit('comparison/setCollectionData', { collectionId: id, data: collData });
               }
             } catch (e) {
               console.warn('Failed to fetch collection metadata for', id, e);
             }
-            // Fetch items to get namelist parameters (nml: prefixed item properties)
             await this.fetchItemParameters(id, stacApi);
           }
         }
@@ -221,19 +255,14 @@ export default {
     },
     async fetchItemParameters(collectionId, stacApi) {
       try {
-        // Fetch enough items to find one that carries nml: namelist properties.
-        // The first item returned (sorted by default) may be a coupler/OASIS file
-        // with no NML keys, so we scan up to 50 and pick the first that has them.
         const response = await fetch(`${stacApi}/collections/${collectionId}/items?limit=50`);
         if (!response.ok) return;
         const data = await response.json();
         if (!data.features || data.features.length === 0) return;
-        // Find first item with at least one nml: property
         const nmlItem = data.features.find(f =>
           Object.keys(f.properties || {}).some(k => k.startsWith('nml:'))
         ) || data.features[0];
         const props = nmlItem.properties || {};
-        // Merge item properties into collection data
         const existing = this.collectionData[collectionId] || {};
         this.$store.commit('comparison/setCollectionData', {
           collectionId,
@@ -244,30 +273,17 @@ export default {
       }
     },
     formatParamName(param) {
-      if (param.startsWith('nml:')) {
-        return param.substring(4);
-      }
-      return param;
+      return param.startsWith('nml:') ? param.substring(4) : param;
     },
     formatValue(value) {
-      if (value === null || value === undefined) {
-        return '-';
-      }
-      if (typeof value === 'boolean') {
-        return value ? 'true' : 'false';
-      }
+      if (value === null || value === undefined) return '-';
+      if (typeof value === 'boolean') return value ? 'true' : 'false';
       if (typeof value === 'number') {
-        if (Math.abs(value) < 0.001 && value !== 0) {
-          return value.toExponential(4);
-        }
-        if (Math.abs(value) > 1e6) {
-          return value.toExponential(4);
-        }
+        if (Math.abs(value) < 0.001 && value !== 0) return value.toExponential(4);
+        if (Math.abs(value) > 1e6) return value.toExponential(4);
         return value.toString();
       }
-      if (typeof value === 'object') {
-        return JSON.stringify(value);
-      }
+      if (typeof value === 'object') return JSON.stringify(value);
       return String(value);
     }
   }
@@ -277,6 +293,7 @@ export default {
 <style lang="scss" scoped>
 .comparison-container {
   max-height: 75vh;
+  overflow-y: auto;
 }
 
 .compare-iframe {
@@ -286,68 +303,18 @@ export default {
   border-radius: 4px;
 }
 
-.comparison-table {
+.comparison-grid {
+  width: 100%;
   font-size: 0.875rem;
+}
+</style>
 
-  .param-header {
-    min-width: 200px;
-    position: sticky;
-    left: 0;
-    background: #f8f9fa;
-    z-index: 1;
-  }
-
-  .collection-header {
-    min-width: 180px;
-    text-align: center;
-    vertical-align: top;
-
-    .collection-id {
-      font-weight: 700;
-      font-size: 1rem;
-      font-family: monospace;
-      color: #212529;
-    }
-
-    .collection-title-small {
-      display: block;
-      font-size: 0.75rem;
-      word-break: break-word;
-      max-width: 180px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    // Subtle left border tint per column to help visual tracking
-    &.col-0 { border-top: 3px solid #0d6efd; }
-    &.col-1 { border-top: 3px solid #fd7e14; }
-    &.col-2 { border-top: 3px solid #198754; }
-  }
-
-  .param-name {
-    font-family: monospace;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    position: sticky;
-    left: 0;
-    background: white;
-
-    code {
-      color: #495057;
-    }
-  }
-
-  .param-value {
-    text-align: center;
-    font-family: monospace;
-    font-size: 0.8rem;
-  }
-
-  tr.table-warning {
-    .param-name {
-      background: #fff3cd;
-    }
-  }
+<style>
+/* AG Grid row highlight for differences (unscoped — needs to reach inside ag-grid shadow) */
+.ag-theme-alpine .ag-row.row-diff {
+  background-color: #fff3cd !important;
+}
+.ag-theme-alpine .ag-row.row-diff.ag-row-hover {
+  background-color: #ffe69c !important;
 }
 </style>
