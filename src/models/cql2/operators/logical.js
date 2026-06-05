@@ -73,4 +73,13 @@ export class CqlNot extends CqlLogicalOperator {
     return i18n.global.t('search.logical.not');
   }
 
+  toText() {
+    // The base-class join() on a single-element array drops the operator.
+    // Override to produce correct CQL2-text syntax: NOT (inner expression).
+    if (this.args && this.args.length === 1) {
+      return `NOT (${this.args[0].toText()})`;
+    }
+    return super.toText();
+  }
+
 }

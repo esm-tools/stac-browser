@@ -3,7 +3,10 @@
     <b-row>
       <b-col class="meta">
         <section class="intro">
-          <h2>{{ $t('description') }}</h2>
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h2>{{ $t('description') }}</h2>
+            <AddToCollection v-if="isCollection && data.id" :item-id="data.getBrowserPath()" />
+          </div>
           <DeprecationNotice v-if="showDeprecation" :data="data" />
           <AnonymizedNotice v-if="data['anon:warning']" :warning="data['anon:warning']" />
           <ReadMore v-if="data.description" :lines="10" :text="$t('read.more')" :text-less="$t('read.less')">
@@ -23,14 +26,24 @@
           </section>
           <LinkList v-if="linkPosition === 'left'" :title="$t('additionalResources')" :links="additionalLinks" :context="data" />
         </section>
-        <section v-if="isCollection || hasThumbnails" class="mb-4">
+        <section v-if="isCollection || hasThumbnails || vizServer" class="mb-4">
           <b-card no-body class="maps-preview">
             <b-tabs v-model="tab" ref="tabs" pills card vertical end>
-              <b-tab v-if="isCollection" :title="$t('map')" no-body>
-                <MapView :stac="data" v-bind="mapData" @changed="dataChanged" @empty="handleEmptyMap" onfocusOnly popover />
+              <!-- Preview tab: only when vizServer is available and isCollection -->
+              <b-tab v-if="vizServer && isCollection" :title="$t('dataPreview') || 'Preview'" no-body>
+                <DataPreview
+                  :item="data"
+                  :viz-server="vizServer"
+                  :stac-api="stacApi"
+                />
               </b-tab>
+              <!-- Thumbnails tab -->
               <b-tab v-if="hasThumbnails" :title="$t('thumbnails')" no-body>
                 <Thumbnails :thumbnails="thumbnails" />
+              </b-tab>
+              <!-- Map tab: fallback when vizServer is NOT available -->
+              <b-tab v-if="isCollection && !vizServer" :title="$t('map')" no-body>
+                <MapView :stac="data" v-bind="mapData" @changed="dataChanged" @empty="handleEmptyMap" onfocusOnly popover />
               </b-tab>
             </b-tabs>
           </b-card>
@@ -82,10 +95,12 @@ export default defineComponent({
     BTab,
     BTabs,
     BCard,
+    AddToCollection: defineAsyncComponent(() => import('../components/AddToCollection.vue')),
     AnonymizedNotice: defineAsyncComponent(() => import('../components/AnonymizedNotice.vue')),
     Assets: defineAsyncComponent(() => import('../components/Assets.vue')),
     Catalogs,
     CollectionLink: defineAsyncComponent(() => import('../components/CollectionLink.vue')),
+    DataPreview: defineAsyncComponent(() => import('../components/DataPreview.vue')),
     DeprecationNotice: defineAsyncComponent(() => import('../components/DeprecationNotice.vue')),
     Description,
     Items,
@@ -142,8 +157,12 @@ export default defineComponent({
     };
   },
   computed: {
-    ...mapState(['data', 'url', 'apiItems', 'apiItemsLink', 'apiItemsPagination', 'apiItemsNumberMatched', 'nextCollectionsLink', 'stateQueryParameters']),
+    ...mapState(['data', 'url', 'catalogUrl', 'apiItems', 'apiItemsLink', 'apiItemsPagination', 'apiItemsNumberMatched', 'nextCollectionsLink', 'stateQueryParameters', 'vizServer']),
     ...mapGetters(['catalogs', 'collectionLink', 'isCollection', 'items', 'getApiItemsLoading', 'parentLink', 'rootLink']),
+    stacApi() {
+      // Use catalogUrl as the STAC API endpoint
+      return this.catalogUrl || '';
+    },
     cssStacType() {
       if (hasText(this.data?.type)) {
         return this.data?.type.toLowerCase();

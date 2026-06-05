@@ -6,7 +6,9 @@
   "main": "src/main.js",
   "scripts": {
     "start": "vite",
+    "start:test": "SB_CONFIG=./config.test.js vite",
     "build": "vite build",
+    "build:test": "SB_CONFIG=./config.test.js vite build",
     "build:preview": "vite build && vite preview",
     "build:report": "vite build --mode report",
     "build:minimal": "vite build --mode minimal",
@@ -50,6 +52,8 @@
     "@radiantearth/stac-migrate": "~2.0.2",
     "@turf/mask": "^7.2.0",
     "@vuepic/vue-datepicker": "^12.1.0",
+    "ag-grid-community": "^35.3.1",
+    "ag-grid-vue3": "^35.3.1",
     "ajv-i18n": "^4.2.0",
     "axios": "^1.2.0",
     "bootstrap": "^5.3.8",

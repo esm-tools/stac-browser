@@ -91,6 +91,23 @@
         :model-value="value.value"
         @update:model-value="updateValue($event)"
       />
+      <!-- GHG numeric input with unit selector -->
+      <template v-else-if="queryable.isNumeric && hasGhgUnits">
+        <b-form-input
+          size="sm"
+          class="value ghg-value"
+          :model-value="displayValue"
+          @update:model-value="updateGhgValue($event)"
+          v-bind="validation"
+        />
+        <b-form-select
+          v-model="selectedUnit"
+          :options="ghgUnitOptions"
+          size="sm"
+          class="unit-selector"
+        />
+      </template>
+      <!-- Standard text/numeric input -->
       <b-form-input
         v-else-if="queryable.isText || queryable.isNumeric"
         size="sm"
@@ -175,8 +192,16 @@ export default {
   data() {
     return {
       operatorsOpen: false,
-      cqlNot: CqlNot
+      cqlNot: CqlNot,
+      // Selected unit for GHG fields (ppm, ppb, decimal)
+      selectedUnit: null
     };
+  },
+  created() {
+    // Initialize selected unit from schema if this is a GHG field
+    if (this.hasGhgUnits) {
+      this.selectedUnit = this.schema['x-ghg-units']?.default || 'decimal';
+    }
   },
   computed: {
     validation() {
@@ -219,6 +244,48 @@ export default {
       set(newValues) {
         this.updateValue(newValues.map(v => this.castArrayItem(v)));
       }
+    },
+    // Check if this queryable has GHG unit metadata
+    hasGhgUnits() {
+      return this.schema && this.schema['x-ghg-units'];
+    },
+    // Get available unit options for GHG fields
+    ghgUnitOptions() {
+      if (!this.hasGhgUnits) return [];
+      const units = this.schema['x-ghg-units'].supported || ['decimal'];
+      return units.map(u => ({
+        value: u,
+        text: u.toUpperCase()
+      }));
+    },
+    // Conversion factors for GHG units
+    ghgConversionFactors() {
+      return {
+        'decimal': 1.0,
+        'ppm': 1e-6,
+        'ppb': 1e-9
+      };
+    },
+    // Display value converted to selected unit
+    displayValue() {
+      if (!this.hasGhgUnits || !this.selectedUnit) {
+        return this.value?.value;
+      }
+      // Internal value is in decimal, convert to display unit
+      const internalValue = this.value?.value;
+      if (internalValue == null || internalValue === '') return '';
+      const factor = this.ghgConversionFactors[this.selectedUnit] || 1.0;
+      // Display value = internal value / factor
+      return factor === 1.0 ? internalValue : (internalValue / factor);
+    }
+  },
+  watch: {
+    // When unit changes, we need to reconvert the value
+    selectedUnit(newUnit, oldUnit) {
+      if (!this.hasGhgUnits || !oldUnit || !newUnit || oldUnit === newUnit) return;
+      // The internal value stays the same (in decimal)
+      // The display just changes based on selected unit
+      // No update needed since displayValue is computed
     }
   },
   methods: {
@@ -322,6 +389,22 @@ export default {
     },
     getEventValue(event) {
       return isObject(event) && 'target' in event ? event.target.value : event;
+    },
+    // Update value for GHG fields, converting from display unit to decimal
+    updateGhgValue(evt) {
+      let displayVal = this.getEventValue(evt);
+      if (displayVal === '' || displayVal == null) {
+        this.emitValue(CqlValue.create(null));
+        return;
+      }
+      displayVal = parseFloat(displayVal);
+      if (isNaN(displayVal)) {
+        return;
+      }
+      // Convert from display unit to internal decimal value
+      const factor = this.ghgConversionFactors[this.selectedUnit] || 1.0;
+      const internalVal = displayVal * factor;
+      this.emitValue(CqlValue.create(internalVal));
     }
   }
 };
@@ -347,6 +430,15 @@ export default {
   .value.between {
     display: flex;
     gap: 0.2em;
+  }
+  .value.ghg-value {
+    flex-grow: 3;
+    width: 5rem !important;
+  }
+  .unit-selector {
+    flex-grow: 1;
+    width: 4rem !important;
+    min-width: 4rem;
   }
   .op {
     min-width: 4rem;

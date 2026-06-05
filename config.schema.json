@@ -264,6 +264,14 @@
           "url"
         ]
       }
+    },
+    "vizServer": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "URL of visualization server for data previews"
     }
   }
 }

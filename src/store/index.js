@@ -10,6 +10,7 @@ import { addMissingChildren, getDisplayTitle, createSTAC } from '../models/stac'
 import { CatalogLike, STAC } from 'stac-js';
 
 import auth from './auth.js';
+import comparison from './comparison.js';
 import { addQueryIfNotExists, hasAuthority, isAuthenticationError, Loading, processSTAC, stacRequest, stacRequestOptions } from './utils';
 import { getBest } from 'stac-js/src/locales';
 import fieldsI18n from '@radiantearth/stac-fields/I18N';
@@ -54,7 +55,8 @@ function getStore(config, router) {
   return createStore({
     strict: import.meta.env.NODE_ENV !== 'production',
     modules: {
-      auth: auth(router)
+      auth: auth(router),
+      comparison: comparison()
     },
     state: Object.assign({}, config, localDefaults(), catalogDefaults(), {
       // Global settings
@@ -62,7 +64,8 @@ function getStore(config, router) {
       downloads: {},
       allowSelectCatalog: !config.catalogUrl,
       globalRequestQueryParameters: config.requestQueryParameters,
-      uiLanguage: config.locale
+      uiLanguage: config.locale,
+      user: { name: 'default' }
     }),
     getters: {
       isRoot: (state, getters) => {

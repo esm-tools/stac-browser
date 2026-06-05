@@ -34,6 +34,7 @@ const optionsForType = (type) =>
 const env = yargs()
   .parserConfiguration({ "camel-case-expansion": false })
   .env("SB")
+  .option("CONFIG", { type: "string", description: "Path to config file" })
   .boolean(optionsForType("boolean"))
   .number(optionsForType("number").concat(optionsForType("integer")))
   .array(optionsForType("array"))
@@ -47,7 +48,8 @@ delete env._;
 delete env.$0;
 
 // For config.js, you need to use dynamic import
-const configFilePath = "file://" + path.resolve(env.CONFIG ? env.CONFIG : "./config.js");
+// Note: yargs lowercases option names, so SB_CONFIG becomes env.config
+const configFilePath = "file://" + path.resolve(env.config ? env.config : "./config.js");
 
 // Note: This makes the config async - you'll need to handle this
 let configFromFile;
@@ -124,6 +126,7 @@ export default defineConfig(({ mode }) => ({
             BFormInvalidFeedback: true,
             BFormSelect: true,
             BFormCheckbox: true,
+            BFormCheckboxGroup: true,
             BFormRadio: true,
             BFormRadioGroup: true,
             BInputGroup: true,
@@ -169,6 +172,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 8080,
+      port: 8080,
+      allowedHosts: true,
   },
 }));

@@ -15,6 +15,12 @@
               <b-button v-if="canSearch" variant="primary" size="sm" :to="searchBrowserLink" :title="$t('search.title')" :pressed="isSearchPage">
                 <b-icon-search /><span class="button-label">{{ $t('search.title') }}</span>
               </b-button>
+              <b-button v-if="!isServerSelector" variant="primary" size="sm" :to="'/collections/personal'" title="My Collections" :pressed="isPersonalCollectionsPage">
+                <b-icon-bookmark /><span class="button-label">My Collections</span>
+              </b-button>
+              <b-button v-if="!isServerSelector" variant="primary" size="sm" :to="'/compute'" title="Compute Clusters" :pressed="isDaskDashboardPage">
+                <b-icon-cpu /><span class="button-label">Compute</span>
+              </b-button>
             </b-button-group>
           </nav>
           <div class="title">
@@ -80,6 +86,9 @@
         </template>
       </i18n-t>
     </footer>
+    <!-- Collection Comparison UI -->
+    <CompareButton />
+    <CollectionComparison />
     <b-popover
       v-if="root" id="popover-root" class="popover-large" target="popover-root-btn"
       placement="bottom" :title="serviceType" teleport-to="#stac-browser"
@@ -99,6 +108,8 @@ import CONFIG from './config';
 // Import icons needed for dynamic component usage
 import BIconLock from '~icons/bi/lock';
 import BIconUnlock from '~icons/bi/unlock';
+import BIconBookmark from '~icons/bi/bookmark';
+import BIconCpu from '~icons/bi/cpu';
 
 import ErrorAlert from './components/ErrorAlert.vue';
 import StacLink from './components/StacLink.vue';
@@ -136,9 +147,13 @@ export default defineComponent({
   name: 'StacBrowser',
   components: {
     Authentication,
+    BIconBookmark,
+    BIconCpu,
     BIconLock,
     BIconUnlock,
     BPopover: defineAsyncComponent(() => import('bootstrap-vue-next').then(m => m.BPopover)),
+    CompareButton: defineAsyncComponent(() => import('./components/CompareButton.vue')),
+    CollectionComparison: defineAsyncComponent(() => import('./components/CollectionComparison.vue')),
     ErrorAlert,
     LanguageChooser: defineAsyncComponent(() => import('./components/LanguageChooser.vue')),
     RootStats: defineAsyncComponent(() => import('./components/RootStats.vue')),
@@ -180,6 +195,12 @@ export default defineComponent({
     },
     isSearchPage() {
       return this.$route.name === 'search';
+    },
+    isPersonalCollectionsPage() {
+      return this.$route.name === 'personal-collections';
+    },
+    isDaskDashboardPage() {
+      return this.$route.name === 'dask-dashboard';
     },
     isServerSelector() {
       return this.$route.name === 'select';

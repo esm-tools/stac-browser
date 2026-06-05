@@ -7,7 +7,8 @@
       <b-card-title>
         <StacLink :data="[data, item]" class="stretched-link" />
       </b-card-title>
-      <b-card-text v-if="fileFormats.length > 0 || hasDescription || isDeprecated" class="intro">
+      <b-card-text v-if="collectionId || fileFormats.length > 0 || hasDescription || isDeprecated" class="intro">
+        <b-badge v-if="collectionId" variant="info" class="me-1 mt-1 collection-badge">{{ collectionId }}</b-badge>
         <b-badge v-if="isDeprecated" variant="warning" class="me-1 mt-1 deprecated">{{ $t('deprecated') }}</b-badge>
         <b-badge v-for="format in fileFormats" :key="format" variant="secondary" class="me-1 mt-1 fileformat">{{ format }}</b-badge>
         <template v-if="hasDescription">{{ summarizeDescription }}</template>
@@ -62,6 +63,9 @@ export default defineComponent({
         deprecated: this.isDeprecated,
         description: this.hasDescription
       };
+    },
+    collectionId() {
+      return this.data && this.data.collection ? this.data.collection : null;
     },
     extent() {
       if (this.data && (this.data.properties.start_datetime || this.data.properties.end_datetime)) {

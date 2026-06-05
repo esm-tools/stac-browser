@@ -1,0 +1,227 @@
+{
+  "T31": {
+    "term": "T31",
+    "category": "resolution",
+    "description": "Atmosphere spectral resolution: ~3.75 degrees (~400km)"
+  },
+  "T63": {
+    "term": "T63",
+    "category": "resolution",
+    "description": "Atmosphere spectral resolution: ~1.875 degrees (~200km)"
+  },
+  "T127": {
+    "term": "T127",
+    "category": "resolution",
+    "description": "Atmosphere spectral resolution: ~0.9 degrees (~100km)"
+  },
+  "T255": {
+    "term": "T255",
+    "category": "resolution",
+    "description": "Atmosphere spectral resolution: ~0.5 degrees (~50km)"
+  },
+  "CORE2": {
+    "term": "CORE2",
+    "category": "mesh",
+    "description": "Ocean mesh: ~1 degree global resolution (Coordinated Ocean-ice Reference Experiments)"
+  },
+  "GLOB": {
+    "term": "GLOB",
+    "category": "mesh",
+    "description": "Ocean mesh: variable resolution, global coverage"
+  },
+  "pi": {
+    "term": "PI-Mesh",
+    "category": "mesh",
+    "description": "Ocean mesh: high resolution around the poles"
+  },
+  "vmr": {
+    "term": "VMR",
+    "category": "units",
+    "description": "Volume Mixing Ratio - concentration as a decimal fraction"
+  },
+  "ppm": {
+    "term": "ppm",
+    "category": "units",
+    "description": "Parts per million (10^-6)"
+  },
+  "ppb": {
+    "term": "ppb",
+    "category": "units",
+    "description": "Parts per billion (10^-9)"
+  },
+  "ECHAM": {
+    "term": "ECHAM",
+    "category": "model",
+    "description": "Atmosphere general circulation model (MPI-M Hamburg)"
+  },
+  "ECHAM6": {
+    "term": "ECHAM6",
+    "category": "model",
+    "description": "ECHAM version 6 atmosphere model"
+  },
+  "FESOM": {
+    "term": "FESOM",
+    "category": "model",
+    "description": "Finite Element Sea ice-Ocean Model (AWI) - unstructured mesh ocean model"
+  },
+  "FESOM2": {
+    "term": "FESOM2",
+    "category": "model",
+    "description": "FESOM version 2 - improved performance and physics"
+  },
+  "JSBACH": {
+    "term": "JSBACH",
+    "category": "model",
+    "description": "Jena Scheme for Biosphere-Atmosphere Coupling in Hamburg - land surface model"
+  },
+  "HDMODEL": {
+    "term": "HDMODEL",
+    "category": "model",
+    "description": "Hydrological Discharge Model - river routing scheme"
+  },
+  "OASIS": {
+    "term": "OASIS",
+    "category": "model",
+    "description": "Ocean Atmosphere Sea Ice Soil coupler framework"
+  },
+  "OASIS3MCT": {
+    "term": "OASIS3-MCT",
+    "category": "model",
+    "description": "OASIS coupler with Model Coupling Toolkit"
+  },
+  "RECOM": {
+    "term": "REcoM",
+    "category": "model",
+    "description": "Regulated Ecosystem Model - marine biogeochemistry"
+  },
+  "HAMOCC": {
+    "term": "HAMOCC",
+    "category": "model",
+    "description": "Hamburg Ocean Carbon Cycle Model - marine biogeochemistry"
+  },
+  "PISM": {
+    "term": "PISM",
+    "category": "model",
+    "description": "Parallel Ice Sheet Model"
+  },
+  "AWI-CM": {
+    "term": "AWI-CM",
+    "category": "model",
+    "description": "AWI Climate Model - coupled ECHAM+FESOM"
+  },
+  "AWI-ESM": {
+    "term": "AWI-ESM",
+    "category": "model",
+    "description": "AWI Earth System Model - includes biogeochemistry"
+  },
+  "MPI-ESM": {
+    "term": "MPI-ESM",
+    "category": "model",
+    "description": "MPI Earth System Model (Hamburg)"
+  },
+  "PI": {
+    "term": "PI-Control",
+    "category": "experiment",
+    "description": "Pre-industrial control run - constant 1850 conditions"
+  },
+  "piControl": {
+    "term": "piControl",
+    "category": "experiment",
+    "description": "Pre-industrial control simulation (CMIP convention)"
+  },
+  "LGM": {
+    "term": "LGM",
+    "category": "experiment",
+    "description": "Last Glacial Maximum - peak ice extent ~21,000 years ago"
+  },
+  "MH": {
+    "term": "Mid-Holocene",
+    "category": "experiment",
+    "description": "Mid-Holocene warm period ~6,000 years ago"
+  },
+  "historical": {
+    "term": "Historical",
+    "category": "experiment",
+    "description": "Historical simulation with observed forcing (typically 1850-2014)"
+  },
+  "spinup": {
+    "term": "Spin-up",
+    "category": "experiment",
+    "description": "Initial equilibration run before main experiment"
+  },
+  "ka": {
+    "term": "ka",
+    "category": "time",
+    "description": "Thousands of years ago (kilo-annum)"
+  },
+  "Ma": {
+    "term": "Ma",
+    "category": "time",
+    "description": "Millions of years ago (mega-annum)"
+  },
+  "BP": {
+    "term": "BP",
+    "category": "time",
+    "description": "Before Present (reference year 1950)"
+  },
+  "BCE": {
+    "term": "BCE",
+    "category": "time",
+    "description": "Before Common Era (negative years)"
+  },
+  "CE": {
+    "term": "CE",
+    "category": "time",
+    "description": "Common Era (positive years)"
+  },
+  "mon": {
+    "term": "Monthly",
+    "category": "frequency",
+    "description": "Monthly mean output"
+  },
+  "day": {
+    "term": "Daily",
+    "category": "frequency",
+    "description": "Daily mean output"
+  },
+  "6hr": {
+    "term": "6-hourly",
+    "category": "frequency",
+    "description": "6-hourly output (4 times per day)"
+  },
+  "3hr": {
+    "term": "3-hourly",
+    "category": "frequency",
+    "description": "3-hourly output (8 times per day)"
+  },
+  "1hr": {
+    "term": "Hourly",
+    "category": "frequency",
+    "description": "Hourly output"
+  },
+  "radctl": {
+    "term": "radctl",
+    "category": "namelist",
+    "description": "Radiation control namelist group"
+  },
+  "runctl": {
+    "term": "runctl",
+    "category": "namelist",
+    "description": "Run control namelist group"
+  },
+  "co2vmr": {
+    "term": "CO2 VMR",
+    "category": "parameter",
+    "description": "CO2 volume mixing ratio (concentration)"
+  },
+  "ch4vmr": {
+    "term": "CH4 VMR",
+    "category": "parameter",
+    "description": "Methane volume mixing ratio"
+  },
+  "n2ovmr": {
+    "term": "N2O VMR",
+    "category": "parameter",
+    "description": "Nitrous oxide volume mixing ratio"
+  }
+}

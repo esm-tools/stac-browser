@@ -5,11 +5,21 @@
         <section class="mb-4">
           <b-card no-body class="maps-preview">
             <b-tabs v-model="tab" ref="tabs" card pills vertical end>
-              <b-tab :title="$t('map')" no-body>
-                <MapView :stac="data" :assets="selectedAssets" @changed="dataChanged" @empty="handleEmptyMap" />
+              <!-- Preview tab: only when vizServer is available -->
+              <b-tab v-if="vizServer" :title="$t('dataPreview') || 'Preview'" no-body>
+                <DataPreview
+                  :item="data"
+                  :viz-server="vizServer"
+                  :stac-api="stacApi"
+                />
               </b-tab>
+              <!-- Thumbnails tab -->
               <b-tab v-if="hasThumbnails" :title="$t('thumbnails')" no-body>
                 <Thumbnails :thumbnails="thumbnails" />
+              </b-tab>
+              <!-- Map tab: fallback when vizServer is NOT available -->
+              <b-tab v-if="!vizServer" :title="$t('map')" no-body>
+                <MapView :stac="data" :assets="selectedAssets" @changed="dataChanged" @empty="handleEmptyMap" />
               </b-tab>
             </b-tabs>
           </b-card>
@@ -19,7 +29,10 @@
       </b-col>
       <b-col class="right">
         <section class="intro">
-          <h2 v-if="data.properties.description">{{ $t('description') }}</h2>
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h2 v-if="data.properties.description">{{ $t('description') }}</h2>
+            <AddToCollection v-if="data.id" :item-id="data.id" />
+          </div>
           <DeprecationNotice v-if="showDeprecation" :data="data" />
           <AnonymizedNotice v-if="data.properties['anon:warning']" :warning="data.properties['anon:warning']" />
           <ReadMore v-if="data.properties.description" :lines="10" :text="$t('read.more')" :text-less="$t('read.less')">
@@ -51,9 +64,11 @@ export default defineComponent({
     BTab,
     BTabs,
     BCard,
+    AddToCollection: defineAsyncComponent(() => import('../components/AddToCollection.vue')),
     AnonymizedNotice: defineAsyncComponent(() => import('../components/AnonymizedNotice.vue')),
     Assets: defineAsyncComponent(() => import('../components/Assets.vue')),
     CollectionLink: defineAsyncComponent(() => import('../components/CollectionLink.vue')),
+    DataPreview: defineAsyncComponent(() => import('../components/DataPreview.vue')),
     Description,
     DeprecationNotice: defineAsyncComponent(() => import('../components/DeprecationNotice.vue')),
     Keywords: defineAsyncComponent(() => import('../components/Keywords.vue')),
@@ -88,8 +103,12 @@ export default defineComponent({
     };
   },
   computed: {
-    ...mapState(['data', 'url']),
-    ...mapGetters(['collectionLink', 'parentLink'])
+    ...mapState(['data', 'url', 'catalogUrl', 'vizServer']),
+    ...mapGetters(['collectionLink', 'parentLink']),
+    stacApi() {
+      // Use catalogUrl as the STAC API endpoint
+      return this.catalogUrl || '';
+    }
   },
   watch: {
     data: {

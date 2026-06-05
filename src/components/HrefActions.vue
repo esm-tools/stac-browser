@@ -273,8 +273,17 @@ export default {
           return this.$t('protocol.ftp');
         case 'oss':
           return this.$t('protocol.oss');
-        case 'file':
+        case 'file': {
+          // Prefer explicit hpc:system on the asset (set by scanner for new items)
+          if (this.data['hpc:system']) {
+            return this.data['hpc:system'];
+          }
+          // Fallback: derive from known HPC path conventions for existing catalog items
+          const href = this.href || '';
+          if (href.includes('/albedo/')) return 'albedo';
+          if (href.includes('/work/') || href.includes('/scratch/')) return 'levante';
           return this.$t('protocol.file');
+        }
       }
       return '';
     },

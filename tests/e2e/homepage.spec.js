@@ -32,9 +32,9 @@ test.describe('STAC Browser Homepage', () => {
     const dropdownMenu = page.locator('.dropdown-menu');
     await expect(dropdownMenu).toBeVisible();
     
-    // Count the number of language options (should be 11)
+    // Count the number of language options (test config only has English)
     const languageOptions = dropdownMenu.locator('.dropdown-item');
-    await expect(languageOptions).toHaveCount(11);
+    await expect(languageOptions).toHaveCount(1);
     
     // Verify English is visible in the list
     const englishOption = dropdownMenu.getByText(/english/i);
